@@ -94,6 +94,8 @@ export default function Standings({ standings: apiStandings, matches: apiMatches
         if (selectedGroup !== group) return null;
 
         if (hasApiStandings && apiStandings[group]) {
+          // Group is complete when all 4 teams have played 3 matches each
+          const isGroupComplete = apiStandings[group].every(s => s.played >= 3);
           // Render from API standings
           return (
             <div key={group} className="mb-6">
@@ -116,8 +118,8 @@ export default function Standings({ standings: apiStandings, matches: apiMatches
                   </thead>
                   <tbody>
                     {apiStandings[group].map((standing, idx) => {
-                      const isQualified = idx < 2;
-                      const isMaybeQualified = idx >= 2 && idx <= 3;
+                      const isQualified = isGroupComplete && idx < 2;
+                      const isMaybeQualified = isGroupComplete && idx >= 2 && idx <= 3;
                       return (
                         <tr
                           key={standing.teamId}
@@ -176,6 +178,11 @@ export default function Standings({ standings: apiStandings, matches: apiMatches
         const groupData = calculatedStandings[group];
         if (!groupData) return null;
 
+        // Group is complete when all 6 group matches have been played
+        const groupMatchCount = matches.filter(m => m.group === group && m.round === 'Fase de Grupos').length;
+        const groupCompletedCount = matches.filter(m => m.group === group && m.round === 'Fase de Grupos' && m.status === 'completed').length;
+        const isGroupComplete = groupCompletedCount >= groupMatchCount && groupMatchCount > 0;
+
         return (
           <div key={group} className="mb-6">
             <h3 className="text-xl font-bold text-white mb-3 text-center">📊 Grupo {group}</h3>
@@ -197,8 +204,8 @@ export default function Standings({ standings: apiStandings, matches: apiMatches
                 </thead>
                 <tbody>
                   {groupData.map((standing, idx) => {
-                    const isQualified = idx < 2;
-                    const isMaybeQualified = idx >= 2 && idx <= 3;
+                    const isQualified = isGroupComplete && idx < 2;
+                    const isMaybeQualified = isGroupComplete && idx >= 2 && idx <= 3;
                     return (
                       <tr
                         key={standing.team.id}

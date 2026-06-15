@@ -9,6 +9,16 @@ export default function MatchCard({ match, compact = false }: { match: Match; co
   const localCityName = `${match.city}, ${match.country === 'USA' ? '🇺🇸' : match.country === 'Canada' ? '🇨🇦' : '🇲🇽'}`;
 
   const matchDate = new Date(`${match.date}T${match.time}:00Z`);
+
+  // Show Spain time (CET/CEST)
+  const spainTimeStr = matchDate.toLocaleTimeString('es-ES', {
+    timeZone: 'Europe/Madrid',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+
+  // Also show venue local time for reference
   const localTimeStr = matchDate.toLocaleTimeString('es-ES', {
     timeZone: localTz,
     hour: '2-digit',
@@ -16,7 +26,8 @@ export default function MatchCard({ match, compact = false }: { match: Match; co
     hour12: false,
   });
 
-  const dateStr = new Date(match.date).toLocaleDateString('es-ES', {
+  const dateStr = matchDate.toLocaleDateString('es-ES', {
+    timeZone: 'Europe/Madrid',
     day: 'numeric',
     month: 'short',
   });
@@ -36,7 +47,7 @@ export default function MatchCard({ match, compact = false }: { match: Match; co
       `}>
         <div className="text-center min-w-[60px]">
           <div className="text-white/60 text-xs">{dateStr}</div>
-          <div className="text-white font-bold text-sm">{localTimeStr}</div>
+          <div className="text-white font-bold text-sm">{spainTimeStr}</div>
         </div>
         <div className="flex-1 flex items-center justify-between px-2">
           <div className="flex items-center gap-2 flex-1 justify-end">
@@ -121,9 +132,14 @@ export default function MatchCard({ match, compact = false }: { match: Match; co
             <span className="text-white/70">{dateStr}</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
+            <span>🇪🇸</span>
+            <span className="text-white/70 font-semibold">{spainTimeStr}</span>
+            <span className="text-white/40">Hora España</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
             <span>🕐</span>
-            <span className="text-white/70">{localTimeStr}</span>
-            <span className="text-white/40">Hora local</span>
+            <span className="text-white/50">{localTimeStr}</span>
+            <span className="text-white/40">Hora local ({match.city})</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <span>📍</span>
