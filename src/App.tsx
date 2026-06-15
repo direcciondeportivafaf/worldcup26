@@ -5,10 +5,11 @@ import MatchSchedule from './components/MatchSchedule';
 import Stadiums from './components/Stadiums';
 import TournamentStats from './components/TournamentStats';
 import Countdown from './components/Countdown';
+import SearchBar from './components/SearchBar';
 import { matches as staticMatches, teams } from './data/matches';
 import { useLiveMatches } from './hooks/useLiveMatches';
 
-type Tab = 'inicio' | 'partidos' | 'clasificacion' | 'sedes' | 'estadisticas';
+type Tab = 'inicio' | 'partidos' | 'clasificacion' | 'sedes' | 'estadisticas' | 'buscar';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('inicio');
@@ -22,6 +23,7 @@ export default function App() {
 
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: 'inicio', label: 'Inicio', icon: '🏠' },
+    { key: 'buscar', label: 'Buscar', icon: '🔍' },
     { key: 'partidos', label: 'Partidos', icon: '⚽' },
     { key: 'clasificacion', label: 'Clasificación', icon: '📊' },
     { key: 'sedes', label: 'Sedes', icon: '🏟️' },
@@ -121,6 +123,9 @@ export default function App() {
         {activeTab === 'inicio' && (
           <HomePage matches={matches} />
         )}
+        {activeTab === 'buscar' && (
+          <SearchBar matches={matches} />
+        )}
         {activeTab === 'partidos' && (
           <MatchSchedule
             matches={matches}
@@ -159,8 +164,32 @@ export default function App() {
 
 function HomePage({ matches }: { matches: typeof staticMatches }) {
   const completed = matches.filter(match => match.status === 'completed');
-  const upcoming = matches.filter(match => match.status === 'upcoming');
-  const nextMatch = upcoming.sort((a, b) => a.date.localeCompare(b.date))[0];
+  const upcoming = matches
+    .filter(match => match.status === 'upcoming')
+    .sort((a, b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      return a.time.localeCompare(b.time);
+    });
+  const next3Matches = upcoming.slice(0, 3);
+
+  const formatSpainTime = (date: string, time: string) => {
+    const d = new Date(`${date}T${time}:00Z`);
+    return d.toLocaleTimeString('es-ES', {
+      timeZone: 'Europe/Madrid',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+  };
+
+  const formatSpainDate = (date: string) => {
+    const d = new Date(date);
+    return d.toLocaleDateString('es-ES', {
+      timeZone: 'Europe/Madrid',
+      day: 'numeric',
+      month: 'short',
+    });
+  };
 
   return (
     <div className="space-y-10">
@@ -207,38 +236,39 @@ function HomePage({ matches }: { matches: typeof staticMatches }) {
         </div>
       </div>
 
-      {/* Next match */}
-      {nextMatch && (
+      {/* Next 3 matches */}
+      {next3Matches.length > 0 && (
         <div>
-          <h3 className="text-xl font-bold text-white mb-4">⏭️ Próximo partido</h3>
-          <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-2xl p-6 border border-white/15">
-            <div className="flex items-center justify-center gap-6">
-              <div className="text-center">
-                <span className="text-4xl block">{
-                  teams.find(team => team.id === nextMatch.team1)?.flag || '❓'
-                }</span>
-                <span className="text-white font-bold block mt-2 text-sm">
-                  {teams.find(team => team.id === nextMatch.team1)?.name || nextMatch.team1}
-                </span>
-              </div>
-              <div className="text-center px-4">
-                <div className="text-2xl font-black text-white/40">VS</div>
-                <div className="text-white/50 text-xs mt-2">
-                  {new Date(nextMatch.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
-                  <br />
-                  {nextMatch.time} UTC
+          <h3 className="text-xl font-bold text-white mb-4">⏭️ Próximos partidos</h3>
+          <div className="space-y-3">
+            {next3Matches.map((match) => {
+              const t1 = teams.find(team => team.id === match.team1);
+              const t2 = teams.find(team => team.id === match.team2);
+              return (
+                <div key={match.id} className="bg-gradient-to-r from-white/10 to-white/5 rounded-2xl p-4 border border-white/15">
+                  <div className="flex items-center justify-center gap-4">
+                    <div className="text-center min-w-[80px]">
+                      <span className="text-3xl block">{t1?.flag || '❓'}</span>
+                      <span className="text-white font-bold block mt-1 text-xs">{t1?.name || match.team1}</span>
+                    </div>
+                    <div className="text-center px-3">
+                      <div className="text-lg font-black text-white/40">VS</div>
+                      <div className="text-green-400 font-bold text-sm mt-1">
+                        {formatSpainTime(match.date, match.time)}
+                      </div>
+                      <div className="text-white/40 text-xs mt-0.5">
+                        {formatSpainDate(match.date)}
+                      </div>
+                      <div className="text-white/30 text-xs mt-0.5">{match.city}</div>
+                    </div>
+                    <div className="text-center min-w-[80px]">
+                      <span className="text-3xl block">{t2?.flag || '❓'}</span>
+                      <span className="text-white font-bold block mt-1 text-xs">{t2?.name || match.team2}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-white/40 text-xs mt-1">{nextMatch.city}</div>
-              </div>
-              <div className="text-center">
-                <span className="text-4xl block">{
-                  teams.find(team => team.id === nextMatch.team2)?.flag || '❓'
-                }</span>
-                <span className="text-white font-bold block mt-2 text-sm">
-                  {teams.find(team => team.id === nextMatch.team2)?.name || nextMatch.team2}
-                </span>
-              </div>
-            </div>
+              );
+            })}
           </div>
         </div>
       )}
