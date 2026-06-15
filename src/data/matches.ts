@@ -111,8 +111,42 @@ export const teams: Team[] = [
   { id: 'pan', name: 'Panamá', code: 'PAN', flag: '🇵🇦', group: 'L' },
 ];
 
+// Mapping for old/static match IDs that don't match current team IDs
+const OLD_ID_MAP: Record<string, string> = {
+  'new': 'nzl',  // New Zealand
+  'mor': 'mar',  // Morocco
+  'ira': 'irn',  // Iran
+  'ara': 'ksa',  // Saudi Arabia
+  'sur': 'uzb',  // Suriname → Uzbekistan (old data placeholder)
+  'kwt': 'cuw',  // Kuwait → Curaçao (old data placeholder)
+  'zmb': 'hai',  // Zambia → Haiti (old data placeholder)
+  'den': 'cro',  // Denmark → Croatia (old data placeholder)
+  'ser': 'aut',  // Serbia → Austria (old data placeholder)
+  'chi': 'cze',  // Chile → Czechia (old data placeholder)
+  'hun': 'jor',  // Hungary → Jordan (old data placeholder)
+  'gab': 'pan',  // Gabon → Panamá (old data placeholder)
+  'jam': 'gha',  // Jamaica → Ghana (old data placeholder)
+};
+
 export function getTeam(id: string): Team {
-  return teams.find(t => t.id === id) || { id, name: id, code: id, flag: '🏳️', group: '?' };
+  // 1. Direct lookup by id
+  const byId = teams.find(t => t.id === id);
+  if (byId) return byId;
+
+  // 2. Lookup by code (uppercase)
+  const upperId = id.toUpperCase();
+  const byCode = teams.find(t => t.code === upperId);
+  if (byCode) return byCode;
+
+  // 3. Try mapping old IDs
+  const mappedId = OLD_ID_MAP[id];
+  if (mappedId) {
+    const mapped = teams.find(t => t.id === mappedId);
+    if (mapped) return mapped;
+  }
+
+  // 4. Fallback
+  return { id, name: id.toUpperCase(), code: id.toUpperCase(), flag: '🏳️', group: '?' };
 }
 
 // All 104 matches of the tournament
