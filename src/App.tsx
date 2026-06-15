@@ -15,7 +15,7 @@ export default function App() {
   const [selectedRound, setSelectedRound] = useState('Fase de Grupos');
   const [selectedGroup, setSelectedGroup] = useState('');
 
-  const { matches: apiMatches, standings, loading, lastUpdated, refresh } = useLiveMatches();
+  const { matches: apiMatches, standings, loading, lastUpdated, refresh, dataSource } = useLiveMatches();
 
   // Use API data when available, fall back to static
   const matches = apiMatches.length > 0 ? apiMatches : staticMatches;
@@ -74,7 +74,7 @@ export default function App() {
               ) : (
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-                  {apiMatches.length > 0 ? 'Datos en vivo' : 'Datos estáticos'}
+                  {dataSource === 'api' ? 'Datos en vivo (API)' : 'Datos locales (estáticos)'}
                 </span>
               )}
               {lastUpdated && (

@@ -1,7 +1,8 @@
 import { matches as staticMatches, teams, Match } from '../data/matches';
 
 export default function TournamentStats({ matches: apiMatches }: { matches: Match[] }) {
-  const matches = apiMatches.length > 0 ? apiMatches : staticMatches;
+  const hasGroupStageMatches = apiMatches.some(m => m.round === 'Fase de Grupos');
+  const matches = apiMatches.length > 0 && hasGroupStageMatches ? apiMatches : staticMatches;
   const groupMatches = matches.filter(m => m.round === 'Fase de Grupos');
   const completedMatches = matches.filter(m => m.status === 'completed');
   const upcomingMatches = matches.filter(m => m.status === 'upcoming');

@@ -20,7 +20,8 @@ export default function MatchSchedule({ matches: apiMatches, selectedRound, onRo
   selectedGroup: string;
   onGroupSelect: (g: string) => void;
 }) {
-  const matches = apiMatches.length > 0 ? apiMatches : staticMatches;
+  const hasGroupStageMatches = apiMatches.some(m => m.round === 'Fase de Grupos');
+  const matches = apiMatches.length > 0 && hasGroupStageMatches ? apiMatches : staticMatches;
 
   const filteredMatches = matches.filter(m => {
     if (m.round !== selectedRound) return false;

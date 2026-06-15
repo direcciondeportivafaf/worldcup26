@@ -69,7 +69,8 @@ export default function Standings({ standings: apiStandings, matches: apiMatches
 
   // Use API standings if available, otherwise calculate from matches
   const hasApiStandings = Object.keys(apiStandings).length > 0;
-  const matches = apiMatches.length > 0 ? apiMatches : staticMatches;
+  const hasGroupStageMatches = apiMatches.some(m => m.round === 'Fase de Grupos');
+  const matches = apiMatches.length > 0 && hasGroupStageMatches ? apiMatches : staticMatches;
 
   return (
     <div>

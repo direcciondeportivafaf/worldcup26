@@ -255,16 +255,22 @@ async function fetchFDStandings(): Promise<Record<string, ApiStanding[]>> {
 export async function fetchMatches(): Promise<Match[]> {
   try {
     const matches = await fetchFDMatches();
-    console.log(`[API] football-data.org: ${matches.length} matches`);
-    return matches;
+    if (matches.length > 0) {
+      console.log(`[API] football-data.org: ${matches.length} matches`);
+      return matches;
+    }
+    throw new Error('Empty response');
   } catch (err) {
     console.warn('[API] football-data.org failed, trying ESPN...', err);
     try {
       const matches = await fetchESPNMatches();
-      console.log(`[API] ESPN: ${matches.length} matches`);
-      return matches;
+      if (matches.length > 0) {
+        console.log(`[API] ESPN: ${matches.length} matches (today only, no group data)`);
+        return matches;
+      }
+      throw new Error('Empty ESPN response');
     } catch (err2) {
-      console.error('[API] Both APIs failed', err2);
+      console.error('[API] Both APIs failed, using empty array (static fallback in components)', err2);
       return [];
     }
   }

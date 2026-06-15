@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Match } from '../data/matches';
+import { Match, matches as staticMatches } from '../data/matches';
 import { fetchMatches, ApiStanding, fetchStandings } from '../services/api';
 import { applyVenueToMatch } from '../data/venueMapping';
 
@@ -12,6 +12,7 @@ interface UseLiveMatchesResult {
   error: string | null;
   lastUpdated: Date | null;
   refresh: () => Promise<void>;
+  dataSource: 'api' | 'static';
 }
 
 /**
@@ -43,24 +44,39 @@ export function useLiveMatches(): UseLiveMatchesResult {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [dataSource, setDataSource] = useState<'api' | 'static'>('static');
   const mountedRef = useRef(true);
 
   const loadData = useCallback(async () => {
     try {
       setError(null);
-      const [rawMatches, standingsData] = await Promise.all([
+      const [apiMatches, standingsData] = await Promise.all([
         fetchMatches(),
         fetchStandings(),
       ]);
 
       if (!mountedRef.current) return;
 
-      const matchesWithVenues = assignVenues(rawMatches);
-      setMatches(matchesWithVenues);
+      // Check if API returned valid group stage data
+      const hasGroupStage = apiMatches.some(m => m.round === 'Fase de Grupos' && m.group);
+
+      if (hasGroupStage) {
+        const matchesWithVenues = assignVenues(apiMatches);
+        setMatches(matchesWithVenues);
+        setDataSource('api');
+      } else {
+        console.warn('[API] No group stage matches from API, using static data');
+        setMatches(staticMatches);
+        setDataSource('static');
+      }
+
       setStandings(standingsData);
       setLastUpdated(new Date());
     } catch (err) {
       if (!mountedRef.current) return;
+      console.error('[API] Error loading data, using static fallback', err);
+      setMatches(staticMatches);
+      setDataSource('static');
       setError(err instanceof Error ? err.message : 'Error desconocido');
     } finally {
       if (mountedRef.current) setLoading(false);
@@ -81,5 +97,5 @@ export function useLiveMatches(): UseLiveMatchesResult {
     };
   }, [loadData]);
 
-  return { matches, standings, loading, error, lastUpdated, refresh: loadData };
+  return { matches, standings, loading, error, lastUpdated, refresh: loadData, dataSource };
 }
