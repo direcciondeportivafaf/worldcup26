@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react';
 import { matches as staticMatches, teams, Match } from '../data/matches';
 import { ApiStanding } from '../services/api';
 import FlagImg from './FlagImg';
@@ -66,7 +67,23 @@ export default function Standings({ standings: apiStandings, matches: apiMatches
   selectedGroup: string;
   onGroupSelect: (g: string) => void;
 }) {
+  const [teamSearch, setTeamSearch] = useState('');
   const groups = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
+
+  const searchResults = useMemo(() => {
+    if (!teamSearch.trim()) return [];
+    const q = teamSearch.toLowerCase().trim();
+    return teams.filter(t =>
+      t.name.toLowerCase().includes(q) ||
+      t.code.toLowerCase().includes(q) ||
+      t.id.toLowerCase().includes(q)
+    );
+  }, [teamSearch]);
+
+  const handleSearchSelect = (team: typeof teams[0]) => {
+    setTeamSearch(team.name);
+    onGroupSelect(team.group);
+  };
 
   // Use API standings if available, otherwise calculate from matches
   const hasApiStandings = Object.keys(apiStandings).length > 0;
@@ -75,6 +92,36 @@ export default function Standings({ standings: apiStandings, matches: apiMatches
 
   return (
     <div>
+      {/* Team search */}
+      <div className="max-w-md mx-auto mb-6">
+        <div className="relative">
+          <input
+            type="text"
+            value={teamSearch}
+            onChange={e => setTeamSearch(e.target.value)}
+            placeholder="🔍 Busca tu selección..."
+            className="w-full px-5 py-3 pl-12 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400/30 text-base"
+          />
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg">🔍</span>
+        </div>
+        {teamSearch.trim() && searchResults.length > 0 && (
+          <div className="mt-2 bg-gray-900/95 border border-white/15 rounded-xl shadow-xl max-h-48 overflow-y-auto">
+            {searchResults.map(team => (
+              <button
+                key={team.id}
+                onClick={() => handleSearchSelect(team)}
+                className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/10 transition-all text-left"
+              >
+                <FlagImg teamId={team.id} emoji={team.flag} size="sm" />
+                <div>
+                  <span className="text-white font-medium text-sm">{team.name}</span>
+                  <span className="text-white/40 text-xs ml-2">Grupo {team.group}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
       <div className="flex flex-wrap gap-2 justify-center mb-6">
         {groups.map(g => (
           <button

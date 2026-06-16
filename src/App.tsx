@@ -132,7 +132,7 @@ export default function App() {
           <HomePage matches={matches} standings={standings} />
         )}
         {activeTab === 'buscar' && (
-          <SearchBar matches={matches} />
+          <SearchBar matches={matches} standings={standings} />
         )}
         {activeTab === 'partidos' && (
           <MatchSchedule
@@ -335,7 +335,7 @@ function HomePage({ matches, standings: apiStandings }: { matches: typeof static
         </div>
 
         {/* Live matches */}
-        {liveMatches.length > 0 && (
+        {!homeSelectedTeam && liveMatches.length > 0 && (
           <div className="mb-6">
             <div className="inline-flex items-center gap-2 bg-red-500/20 text-red-300 px-4 py-2 rounded-full text-sm mb-3">
               <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
@@ -373,21 +373,25 @@ function HomePage({ matches, standings: apiStandings }: { matches: typeof static
           </div>
         )}
 
-        <div className="inline-flex items-center gap-2 bg-white/10 text-white px-4 py-2 rounded-full text-sm mb-6">
-          <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-          En progreso · {completed.length} partidos jugados de {matches.length}
-        </div>
-        <Countdown matches={matches} />
-        <h2 className="text-4xl md:text-5xl font-black text-white mb-4">
-          La Copa del Mundo más
-          <span className="block bg-gradient-to-r from-green-400 to-yellow-400 bg-clip-text text-transparent">
-            grande de la historia
-          </span>
-        </h2>
-        <p className="text-white/60 text-lg max-w-2xl mx-auto">
-          48 selecciones, 16 ciudades, 3 países. La primera Copa del Mundo con 48 equipos,
-          organizada conjuntamente por Estados Unidos, Canadá y México.
-        </p>
+        {!homeSelectedTeam && (
+          <>
+            <div className="inline-flex items-center gap-2 bg-white/10 text-white px-4 py-2 rounded-full text-sm mb-6">
+              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+              En progreso · {completed.length} partidos jugados de {matches.length}
+            </div>
+            <Countdown matches={matches} />
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-4">
+              La Copa del Mundo más
+              <span className="block bg-gradient-to-r from-green-400 to-yellow-400 bg-clip-text text-transparent">
+                grande de la historia
+              </span>
+            </h2>
+            <p className="text-white/60 text-lg max-w-2xl mx-auto">
+              48 selecciones, 16 ciudades, 3 países. La primera Copa del Mundo con 48 equipos,
+              organizada conjuntamente por Estados Unidos, Canadá y México.
+            </p>
+          </>
+        )}
       </div>
 
       {/* Home search results */}
@@ -574,6 +578,8 @@ function HomePage({ matches, standings: apiStandings }: { matches: typeof static
       )}
 
       {/* Stats grid */}
+      {!homeSelectedTeam && (
+        <>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-gradient-to-br from-green-500/20 to-emerald-600/10 rounded-2xl p-6 border border-green-500/20 text-center hover:border-green-500/40 transition-all">
           <div className="text-4xl mb-2">🌍</div>
@@ -711,6 +717,8 @@ function HomePage({ matches, standings: apiStandings }: { matches: typeof static
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }
