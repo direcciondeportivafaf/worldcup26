@@ -1,5 +1,86 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+// Normalize: remove accents and lowercase for matching
+function norm(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+// Spanish name → ESPN English displayName mapping
+const NAME_MAP: Record<string, string> = {
+  'méxico': 'mexico',
+  'estados unidos': 'united states',
+  'canadá': 'canada',
+  'corea del sur': 'south korea',
+  'chequia': 'czechia',
+  'sudáfrica': 'south africa',
+  'japón': 'japan',
+  'países bajos': 'netherlands',
+  'paìses bajos': 'netherlands',
+  'boscia y herzegovina': 'bosnia & herzegovina',
+  'bosnia y herzegovina': 'bosnia & herzegovina',
+  'costa de marfil': 'ivory coast',
+  'nueva zelanda': 'new zealand',
+  'arabia saudí': 'saudi arabia',
+  'arabia saudi': 'saudi arabia',
+  'irán': 'iran',
+  'españa': 'spain',
+  'brasil': 'brazil',
+  'francia': 'france',
+  'alemania': 'germany',
+  'inglaterra': 'england',
+  'argelia': 'algeria',
+  'jordania': 'jordan',
+  'RD del Congo': 'dr congo',
+  'rd del congo': 'dr congo',
+  'irak': 'iraq',
+  'marruecos': 'morocco',
+  'senegal': 'senegal',
+  'túnez': 'tunisia',
+  'turquía': 'turkey',
+  'australia': 'australia',
+  'paraguay': 'paraguay',
+  'ecuador': 'ecuador',
+  'suecia': 'sweden',
+  'egipto': 'egypt',
+  'bélgica': 'belgium',
+  'uruguay': 'uruguay',
+  'croacia': 'croatia',
+  'ghana': 'ghana',
+  'panamá': 'panama',
+  'colombia': 'colombia',
+  'portugal': 'portugal',
+  'suiza': 'switzerland',
+  'uruguay': 'uruguay',
+  'catar': 'qatar',
+  'haití': 'haiti',
+  'curazao': 'curacao',
+  'noruega': 'norway',
+  'austria': 'austria',
+  'uzbekistán': 'uzbekistan',
+  'cabo verde': 'cape verde',
+};
+
+function matchTeamName(ourName: string, espnName: string): boolean {
+  const a = norm(ourName);
+  const b = norm(espnName);
+  // Direct normalized match
+  if (a === b) return true;
+  // Check name map
+  const mapped = NAME_MAP[a];
+  if (mapped && norm(mapped) === b) return true;
+  // Reverse: check if ESPN name maps to our name
+  for (const [key, val] of Object.entries(NAME_MAP)) {
+    if (norm(val) === b && norm(key) === a) return true;
+  }
+  // Partial match (first 3 chars at least)
+  if (a.length >= 3 && b.length >= 3 && a.slice(0, 3) === b.slice(0, 3)) return true;
+  return false;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -21,22 +102,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const sb = await sbRes.json();
     const events = sb.events || [];
 
-    const t1Lower = t1.toLowerCase();
-    const t2Lower = t2.toLowerCase();
+    console.log(`[match-detail] Looking for: ${t1} vs ${t2} (${events.length} events)`);
 
-    // Find matching event by team display names
+    // Find matching event by team display names (accent-insensitive)
     const event = events.find((e: any) => {
       const competitors = e.competitions?.[0]?.competitors || [];
-      const names = competitors.map((c: any) => (c.team?.displayName || '').toLowerCase());
-      return names.includes(t1Lower) && names.includes(t2Lower);
+      const names = competitors.map((c: any) => c.team?.displayName || '');
+      return (
+        (matchTeamName(t1, names[0] || '') && matchTeamName(t2, names[1] || '')) ||
+        (matchTeamName(t1, names[1] || '') && matchTeamName(t2, names[0] || ''))
+      );
     });
 
     if (!event) {
-      return res.status(404).json({ error: 'Match not found on ESPN', t1, t2 });
+      // Log some event names for debugging
+      const sampleNames = events.slice(0, 5).map((e: any) =>
+        e.competitions?.[0]?.competitors?.map((c: any) => c.team?.displayName).join(' vs ')
+      );
+      console.log(`[match-detail] Not found. Sample events:`, sampleNames);
+      return res.status(404).json({ error: 'Match not found on ESPN', t1, t2, sampleEvents: sampleNames });
     }
 
+    const eventName = event.competitions?.[0]?.competitors?.map((c: any) => c.team?.displayName).join(' vs ');
+    console.log(`[match-detail] Found event: ${eventName} (id=${event.id})`);
+
     // The scoreboard response already includes goal details in the `details` array
-    const details = event.competitions?.[0]?.details || event.details || [];
+    const details = event.competitions?.[0]?.details || [];
 
     // Also try summary endpoint for richer data (keyEvents with participants)
     let goals: any[] = [];
@@ -78,17 +169,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             player: { id: 0, name: ke.participants?.[0]?.athlete?.displayName || '' },
             card: ke.type?.type === 'red-card' ? 'RED' : ke.type?.type === 'yellow-red-card' ? 'YELLOW_RED' : 'YELLOW',
           }));
+
+        console.log(`[match-detail] Summary: ${goals.length} goals, ${bookings.length} bookings`);
       }
-    } catch {
-      // Summary failed — fall back to scoreboard details
+    } catch (e) {
+      console.log(`[match-detail] Summary failed, using scoreboard details`);
     }
 
     // Fallback: parse goals from scoreboard details if summary didn't provide them
     if (goals.length === 0 && details.length > 0) {
+      console.log(`[match-detail] Using ${details.length} scoreboard details`);
       goals = details
         .filter((d: any) => d.scoringPlay && d.type?.id)
         .map((d: any) => {
-          const typeId = d.type?.id;
           const text = d.type?.text || '';
           const minute = Math.floor((d.clock?.value || 0) / 60);
           const isPenalty = text.toLowerCase().includes('penalty');
@@ -107,6 +200,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             score: { home: 0, away: 0 },
           };
         });
+      console.log(`[match-detail] Parsed ${goals.length} goals from details`);
     }
 
     res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate');
