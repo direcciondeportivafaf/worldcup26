@@ -10,7 +10,24 @@ const __dirname = path.dirname(__filename);
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), viteSingleFile()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    viteSingleFile(),
+    {
+      name: 'inject-cache-buster',
+      transformIndexHtml: {
+        order: 'post',
+        handler(html) {
+          const hash = Date.now().toString(36);
+          return html.replace(
+            '</head>',
+            `<meta name="app-version" content="${hash}">\n</head>`
+          );
+        },
+      },
+    },
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
