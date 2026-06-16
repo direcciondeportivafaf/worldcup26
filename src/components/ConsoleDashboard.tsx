@@ -46,6 +46,7 @@ export default function ConsoleDashboard() {
   const [, forceUpdate] = useState(0);
   const [refreshStatus, setRefreshStatus] = useState<RefreshStatus>({});
   const [showAllClients, setShowAllClients] = useState(false);
+  const [matchGoalProgress, setMatchGoalProgress] = useState('');
   const clientId = getClientId();
 
   useEffect(() => {
@@ -85,6 +86,26 @@ export default function ConsoleDashboard() {
     const api = await import('../services/api');
     await Promise.all([api.fetchMatches(), api.fetchStandings(), api.fetchScorers()]);
   });
+
+  const handleLoadAllGoals = async () => {
+    triggerRefresh('goals', async () => {
+      const api = await import('../services/api');
+      const matches = await api.fetchMatches();
+      const completed = matches.filter(m => m.status === 'completed' && m.score1 !== undefined);
+      setMatchGoalProgress(`0/${completed.length}`);
+      for (let i = 0; i < completed.length; i++) {
+        setMatchGoalProgress(`${i + 1}/${completed.length}`);
+        try {
+          await api.fetchMatchDetail(completed[i].id);
+        } catch {}
+        // Rate limit: max 10 calls/min on free tier, wait 7s between calls
+        if (i < completed.length - 1) {
+          await new Promise(r => setTimeout(r, 7000));
+        }
+      }
+      setMatchGoalProgress('');
+    });
+  };
 
   const entries = getLogEntries();
   const rpm = getRequestsPerMinute();
@@ -154,6 +175,15 @@ export default function ConsoleDashboard() {
               className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${statusColor(refreshStatus.all || 'idle')}`}
             >
               {refreshStatus.all === 'idle' ? '🚀 Actualizar todo' : statusLabel(refreshStatus.all)}
+            </button>
+            <button
+              onClick={handleLoadAllGoals}
+              disabled={refreshStatus.goals === 'loading'}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${statusColor(refreshStatus.goals || 'idle')}`}
+            >
+              {refreshStatus.goals === 'idle' ? '🥅 Cargar goles de todos los partidos' :
+               refreshStatus.goals === 'loading' ? `⏳ ${matchGoalProgress}` :
+               statusLabel(refreshStatus.goals)}
             </button>
           </div>
         </div>

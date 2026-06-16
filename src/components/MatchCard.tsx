@@ -13,6 +13,7 @@ export default function MatchCard({ match, compact = false }: { match: Match; co
   const [showGoals, setShowGoals] = useState(false);
   const [goals, setGoals] = useState<MatchGoal[]>([]);
   const [loadingGoals, setLoadingGoals] = useState(false);
+  const [goalError, setGoalError] = useState('');
 
   const t1 = match.team1 === 'TBD' ? { id: 'TBD', name: 'Por definir', code: 'TBD', flag: '❓', group: '' } : getTeam(match.team1);
   const t2 = match.team2 === 'TBD' ? { id: 'TBD', name: 'Por definir', code: 'TBD', flag: '❓', group: '' } : getTeam(match.team2);
@@ -57,14 +58,20 @@ export default function MatchCard({ match, compact = false }: { match: Match; co
       setShowGoals(true);
       return;
     }
-    // Fetch match detail
     setLoadingGoals(true);
+    setGoalError('');
     try {
       const detail = await fetchMatchDetail(match.id);
-      if (detail) setGoals(detail.goals);
+      if (detail) {
+        setGoals(detail.goals);
+        if (detail.goals.length === 0) setGoalError('No hay datos de goles para este partido');
+      } else {
+        setGoalError('No se pudo cargar la información del partido');
+      }
       setShowGoals(true);
     } catch (e) {
-      console.error('Failed to load match goals:', e);
+      setGoalError('Error al cargar los goles');
+      setShowGoals(true);
     } finally {
       setLoadingGoals(false);
     }
@@ -190,7 +197,7 @@ export default function MatchCard({ match, compact = false }: { match: Match; co
               </div>
             )}
             {showGoals && goals.length === 0 && !loadingGoals && (
-              <div className="mt-2 text-center text-white/30 text-xs">No hay datos de goles disponibles</div>
+              <div className="mt-2 text-center text-white/30 text-xs">{goalError || 'No hay datos de goles disponibles'}</div>
             )}
           </div>
         )}

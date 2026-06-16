@@ -392,9 +392,15 @@ export async function fetchMatchDetail(matchId: number): Promise<MatchDetail | n
       ? { 'X-Auth-Token': FOOTBALL_DATA_KEY }
       : {};
 
+    console.log(`[API] Fetching match detail: ${url}`);
     const res = await fetch(url, { headers, cache: 'no-store' });
-    if (!res.ok) throw new Error(`Match detail: ${res.status}`);
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      console.error(`[API] Match detail ${matchId} failed: ${res.status}`, errText);
+      throw new Error(`Match detail: ${res.status}`);
+    }
     const data = await res.json();
+    console.log(`[API] Match detail ${matchId}: ${data.goals?.length || 0} goals`);
     return {
       id: data.id,
       goals: data.goals || [],
