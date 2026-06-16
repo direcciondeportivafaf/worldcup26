@@ -116,6 +116,7 @@ const OLD_ID_MAP: Record<string, string> = {
   'new': 'nzl',  // New Zealand
   'ira': 'irn',  // Iran
   'ara': 'ksa',  // Saudi Arabia
+  'uru': 'ury',  // Uruguay (API may use URU instead of URY)
 };
 
 export function getTeam(id: string): Team {
@@ -135,7 +136,12 @@ export function getTeam(id: string): Team {
     if (mapped) return mapped;
   }
 
-  // 4. Fallback
+  // 4. Try matching by lowercase id against team codes
+  const lowerId = id.toLowerCase();
+  const byLowerCode = teams.find(t => t.code.toLowerCase() === lowerId);
+  if (byLowerCode) return byLowerCode;
+
+  // 5. Fallback
   return { id, name: id.toUpperCase(), code: id.toUpperCase(), flag: '🏳️', group: '?' };
 }
 

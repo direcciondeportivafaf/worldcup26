@@ -86,12 +86,34 @@ const GROUP_LETTERS = 'ABCDEFGHIJKL'.split('');
 const teamByCode: Record<string, Team> = {};
 staticTeams.forEach(t => { teamByCode[t.code] = t; });
 
+// Fallback TLA mappings for API codes that differ from our static data
+const TLA_OVERRIDES: Record<string, string> = {
+  'URU': 'URY',
+  'RSA': 'RSA',
+  'SCO': 'SCO',
+  'ENG': 'ENG',
+};
+
+function resolveTeam(tla: string): Team | undefined {
+  const upper = tla.toUpperCase();
+  const lower = tla.toLowerCase();
+  // 1. Direct match by code
+  if (teamByCode[upper]) return teamByCode[upper];
+  // 2. Override mapping
+  const mapped = TLA_OVERRIDES[upper];
+  if (mapped && teamByCode[mapped]) return teamByCode[mapped];
+  // 3. Match by lowercase ID
+  const byId = staticTeams.find(t => t.id === lower);
+  if (byId) return byId;
+  return undefined;
+}
+
 function getTeamFlag(tla: string): string {
-  return teamByCode[tla]?.flag || '🏳️';
+  return resolveTeam(tla)?.flag || '🏳️';
 }
 
 function getTeamName(tla: string): string {
-  return teamByCode[tla]?.name || tla;
+  return resolveTeam(tla)?.name || tla;
 }
 
 // ========== Status mapping ==========
