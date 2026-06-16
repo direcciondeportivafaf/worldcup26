@@ -32,8 +32,8 @@ interface FDMatch {
   matchday: number;
   stage: string;
   group: string | null;
-  homeTeam: FDTeam;
-  awayTeam: FDTeam;
+  homeTeam: FDTeam | null;
+  awayTeam: FDTeam | null;
   score: FDScore;
   lastUpdated: string;
 }
@@ -114,12 +114,15 @@ function transformFDMatch(fd: FDMatch, allMatches: FDMatch[]): Match {
   const time = fd.utcDate.split('T')[1]?.slice(0, 5) || '00:00';
   const idx = allMatches.findIndex(m => m.id === fd.id);
 
+  const homeTla = fd.homeTeam?.tla?.toLowerCase() || 'tbd';
+  const awayTla = fd.awayTeam?.tla?.toLowerCase() || 'tbd';
+
   return {
     id: idx >= 0 ? idx + 1 : fd.id,
     round: STAGE_MAP[fd.stage] || fd.stage,
     group: fd.group ? fd.group.replace('GROUP_', '') : undefined,
-    team1: fd.homeTeam.tla.toLowerCase(),
-    team2: fd.awayTeam.tla.toLowerCase(),
+    team1: homeTla,
+    team2: awayTla,
     date,
     time,
     city: '',
