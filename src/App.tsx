@@ -135,6 +135,13 @@ export default function App() {
                 </button>
               </div>
             )}
+
+            {/* Error display */}
+            {error && !loading && (
+              <div className="mt-3 bg-red-500/20 border border-red-500/40 rounded-lg px-4 py-2 text-center">
+                <span className="text-red-300 text-xs">⚠️ Error: {error}</span>
+              </div>
+            )}
           </div>
         </div>
 

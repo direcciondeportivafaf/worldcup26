@@ -50,31 +50,46 @@ export function useLiveMatches(): UseLiveMatchesResult {
   const loadData = useCallback(async () => {
     try {
       setError(null);
-      const [apiMatches, standingsData] = await Promise.all([
-        fetchMatches(),
-        fetchStandings(),
-      ]);
+
+      // Fetch matches independently - this is critical
+      let apiMatches: Match[] = [];
+      let matchesOk = false;
+      try {
+        apiMatches = await fetchMatches();
+        const hasGroupStage = apiMatches.some(m => m.round === 'Fase de Grupos' && m.group);
+        if (hasGroupStage && apiMatches.length > 0) {
+          matchesOk = true;
+        }
+      } catch (e) {
+        console.error('[API] fetchMatches failed:', e);
+      }
 
       if (!mountedRef.current) return;
 
-      // Check if API returned valid group stage data
-      const hasGroupStage = apiMatches.some(m => m.round === 'Fase de Grupos' && m.group);
-
-      if (hasGroupStage) {
+      if (matchesOk) {
         const matchesWithVenues = assignVenues(apiMatches);
         setMatches(matchesWithVenues);
         setDataSource('api');
+        console.log(`[API] Using live data: ${apiMatches.length} matches`);
       } else {
-        console.warn('[API] No group stage matches from API, using static data');
+        console.warn('[API] API data invalid, using static fallback');
         setMatches(staticMatches);
         setDataSource('static');
+        setError('No se pudieron obtener datos de la API');
       }
 
-      setStandings(standingsData);
-      setLastUpdated(new Date());
+      // Fetch standings independently - don't let this break matches
+      try {
+        const standingsData = await fetchStandings();
+        if (mountedRef.current) setStandings(standingsData);
+      } catch (e) {
+        console.error('[API] fetchStandings failed:', e);
+      }
+
+      if (mountedRef.current) setLastUpdated(new Date());
     } catch (err) {
       if (!mountedRef.current) return;
-      console.error('[API] Error loading data, using static fallback', err);
+      console.error('[API] Unexpected error:', err);
       setMatches(staticMatches);
       setDataSource('static');
       setError(err instanceof Error ? err.message : 'Error desconocido');

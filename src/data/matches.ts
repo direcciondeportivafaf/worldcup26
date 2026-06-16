@@ -140,8 +140,14 @@ export function getTeam(id: string): Team {
 }
 
 // All 104 matches of the tournament (fallback when API unavailable)
-// Group stage: correct from API | Knockout: TBD placeholders
-export const matches: Match[] = [
+// Status is dynamically calculated based on current date/time
+function calcMatchStatus(date: string, time: string): 'completed' | 'upcoming' {
+  const matchEnd = new Date(`${date}T${time}:00Z`);
+  matchEnd.setHours(matchEnd.getHours() + 2); // 2h match duration
+  return matchEnd < new Date() ? 'completed' : 'upcoming';
+}
+
+const _matches: Match[] = [
   // ===== GROUP STAGE =====
   // Group A
   { id: 1, round: 'Fase de Grupos', group: 'A', team1: 'mex', team2: 'rsa', date: '2026-06-11', time: '19:00', city: 'Estadio Azteca', country: 'Mexico', status: 'completed', score1: 2, score2: 0 },
@@ -272,3 +278,12 @@ export const matches: Match[] = [
   // ===== FINAL =====
   { id: 104, round: 'Final', team1: 'tbd', team2: 'tbd', date: '2026-07-19', time: '19:00', city: 'Estadio Azteca', country: 'Mexico', status: 'upcoming' },
 ];
+
+// Dynamically recalculate status based on current date/time
+// This ensures old completed matches don't show as 'upcoming' in the static fallback
+export const matches: Match[] = _matches.map(m => ({
+  ...m,
+  status: m.score1 !== undefined && m.status === 'completed'
+    ? 'completed' as const
+    : calcMatchStatus(m.date, m.time),
+}));
