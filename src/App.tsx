@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DualClock from './components/DualClock';
 import Standings from './components/Standings';
 import MatchSchedule from './components/MatchSchedule';
@@ -6,7 +6,7 @@ import Stadiums from './components/Stadiums';
 import TournamentStats from './components/TournamentStats';
 import Countdown from './components/Countdown';
 import SearchBar from './components/SearchBar';
-import { matches as staticMatches, teams } from './data/matches';
+import { matches as staticMatches, teams, getTeam, Match } from './data/matches';
 import { useLiveMatches } from './hooks/useLiveMatches';
 
 type Tab = 'inicio' | 'partidos' | 'clasificacion' | 'sedes' | 'estadisticas' | 'buscar';
@@ -62,10 +62,7 @@ export default function App() {
 
             {/* Live clocks */}
             <div className="mb-4">
-              <DualClock
-                matchCityTimezone="America/Mexico_City"
-                matchCityName="Estadio Azteca 🇲🇽"
-              />
+              <HeaderClocks />
             </div>
 
             {/* API Status */}
@@ -173,7 +170,11 @@ export default function App() {
 }
 
 function HomePage({ matches }: { matches: typeof staticMatches }) {
+  const [homeQuery, setHomeQuery] = useState('');
+  const [selectedHomeTeam, setSelectedHomeTeam] = useState<string | null>(null);
+
   const completed = matches.filter(match => match.status === 'completed');
+  const liveMatches = matches.filter(match => match.status === 'live');
   const upcoming = matches
     .filter(match => match.status === 'upcoming')
     .sort((a, b) => {
@@ -181,6 +182,26 @@ function HomePage({ matches }: { matches: typeof staticMatches }) {
       return a.time.localeCompare(b.time);
     });
   const next3Matches = upcoming.slice(0, 3);
+
+  const homeFilteredTeams = homeQuery.trim()
+    ? teams.filter(t =>
+        t.name.toLowerCase().includes(homeQuery.toLowerCase().trim()) ||
+        t.code.toLowerCase().includes(homeQuery.toLowerCase().trim())
+      )
+    : [];
+
+  const homeSelectedTeam = selectedHomeTeam
+    ? teams.find(t => t.id === selectedHomeTeam) || null
+    : homeFilteredTeams.length === 1 ? homeFilteredTeams[0] : null;
+
+  const homeTeamMatches = homeSelectedTeam
+    ? matches
+        .filter(m => m.team1 === homeSelectedTeam.id || m.team2 === homeSelectedTeam.id)
+        .sort((a, b) => {
+          if (a.date !== b.date) return a.date.localeCompare(b.date);
+          return a.time.localeCompare(b.time);
+        })
+    : [];
 
   const formatSpainTime = (date: string, time: string) => {
     const d = new Date(`${date}T${time}:00Z`);
@@ -205,6 +226,78 @@ function HomePage({ matches }: { matches: typeof staticMatches }) {
     <div className="space-y-10">
       {/* Hero section */}
       <div className="text-center py-10">
+        {/* Search bar */}
+        <div className="max-w-md mx-auto mb-6">
+          <div className="relative">
+            <input
+              type="text"
+              value={homeQuery}
+              onChange={e => { setHomeQuery(e.target.value); setSelectedHomeTeam(null); }}
+              onFocus={() => setSelectedHomeTeam(null)}
+              placeholder="🔍 Busca tu selección..."
+              className="w-full px-5 py-3 pl-12 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400/30 text-base"
+            />
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg">🔍</span>
+          </div>
+          {/* Dropdown suggestions */}
+          {homeQuery.trim() && homeFilteredTeams.length > 0 && !homeSelectedTeam && (
+            <div className="mt-2 bg-gray-900/95 border border-white/15 rounded-xl shadow-xl max-h-48 overflow-y-auto">
+              {homeFilteredTeams.map(team => (
+                <button
+                  key={team.id}
+                  onClick={() => { setSelectedHomeTeam(team.id); setHomeQuery(team.name); }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/10 transition-all text-left"
+                >
+                  <span className="text-xl">{team.flag}</span>
+                  <div>
+                    <span className="text-white font-medium text-sm">{team.name}</span>
+                    <span className="text-white/40 text-xs ml-2">Grupo {team.group}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Live matches */}
+        {liveMatches.length > 0 && (
+          <div className="mb-6">
+            <div className="inline-flex items-center gap-2 bg-red-500/20 text-red-300 px-4 py-2 rounded-full text-sm mb-3">
+              <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+              En vivo · {liveMatches.length} partido{liveMatches.length > 1 ? 's' : ''} en juego
+            </div>
+            <div className="space-y-2 max-w-lg mx-auto">
+              {liveMatches.map((match) => {
+                const t1 = getTeam(match.team1);
+                const t2 = getTeam(match.team2);
+                return (
+                  <div key={match.id} className="bg-red-500/10 border border-red-500/30 rounded-xl p-3">
+                    <div className="flex items-center justify-center gap-3">
+                      <div className="text-center min-w-[60px]">
+                        <span className="text-2xl block">{t1?.flag || '❓'}</span>
+                        <span className="text-white font-bold text-xs block mt-0.5">{t1?.name || match.team1}</span>
+                      </div>
+                      <div className="text-center px-2">
+                        <div className="text-xl font-black text-white">
+                          {match.score1 ?? '-'} : {match.score2 ?? '-'}
+                        </div>
+                        <div className="flex items-center gap-1 justify-center mt-0.5">
+                          <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
+                          <span className="text-red-400 text-xs font-bold">EN VIVO</span>
+                        </div>
+                      </div>
+                      <div className="text-center min-w-[60px]">
+                        <span className="text-2xl block">{t2?.flag || '❓'}</span>
+                        <span className="text-white font-bold text-xs block mt-0.5">{t2?.name || match.team2}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="inline-flex items-center gap-2 bg-white/10 text-white px-4 py-2 rounded-full text-sm mb-6">
           <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
           En progreso · {completed.length} partidos jugados de {matches.length}
@@ -221,6 +314,77 @@ function HomePage({ matches }: { matches: typeof staticMatches }) {
           organizada conjuntamente por Estados Unidos, Canadá y México.
         </p>
       </div>
+
+      {/* Home search results */}
+      {homeSelectedTeam && (
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-2xl p-6 border border-white/15 text-center mb-4">
+            <span className="text-5xl block mb-2">{homeSelectedTeam.flag}</span>
+            <h3 className="text-2xl font-black text-white">{homeSelectedTeam.name}</h3>
+            <span className="text-white/50 text-sm">Grupo {homeSelectedTeam.group}</span>
+          </div>
+          <h4 className="text-lg font-bold text-white mb-3">📅 Partidos ({homeTeamMatches.length})</h4>
+          <div className="space-y-2">
+            {homeTeamMatches.map(match => {
+              const isTeam1 = match.team1 === homeSelectedTeam.id;
+              const opponent = getTeam(isTeam1 ? match.team2 : match.team1);
+              const score = isTeam1
+                ? `${match.score1 ?? '-'} : ${match.score2 ?? '-'}`
+                : `${match.score2 ?? '-'} : ${match.score1 ?? '-'}`;
+              const isWin = match.status === 'completed' && (
+                (isTeam1 && (match.score1 ?? 0) > (match.score2 ?? 0)) ||
+                (!isTeam1 && (match.score2 ?? 0) > (match.score1 ?? 0))
+              );
+              const isDraw = match.status === 'completed' && match.score1 === match.score2;
+              const isLoss = match.status === 'completed' && !isWin && !isDraw;
+              return (
+                <div
+                  key={match.id}
+                  className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                    isWin ? 'bg-green-500/10 border-green-500/30' :
+                    isDraw ? 'bg-yellow-500/10 border-yellow-500/30' :
+                    isLoss ? 'bg-red-500/10 border-red-500/30' :
+                    'bg-white/5 border-white/10'
+                  }`}
+                >
+                  <div className="text-center min-w-[70px]">
+                    <div className="text-white/60 text-xs">{formatSpainDate(match.date)}</div>
+                    <div className="text-white font-bold text-sm">{formatSpainTime(match.date, match.time)}</div>
+                  </div>
+                  <div className="flex-1 flex items-center justify-center gap-3">
+                    <div className="text-right flex-1">
+                      <span className="text-white font-medium text-sm">{homeSelectedTeam.name}</span>
+                    </div>
+                    <div className={`px-3 py-1 rounded text-center min-w-[60px] font-bold text-sm ${
+                      match.status === 'completed'
+                        ? isWin ? 'bg-green-500/30 text-green-400' :
+                          isDraw ? 'bg-yellow-500/30 text-yellow-400' :
+                          'bg-red-500/30 text-red-400'
+                        : 'bg-white/10 text-white/50'
+                    }`}>
+                      {match.status === 'completed' ? score : 'VS'}
+                    </div>
+                    <div className="text-left flex-1">
+                      <div className="flex items-center gap-1">
+                        <span className="text-lg">{opponent?.flag}</span>
+                        <span className="text-white font-medium text-sm">{opponent?.name || match.team2}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right min-w-[60px]">
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      match.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                      'bg-blue-500/20 text-blue-400'
+                    }`}>
+                      {match.status === 'completed' ? 'Jugado' : match.round}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -360,6 +524,55 @@ function HomePage({ matches }: { matches: typeof staticMatches }) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function HeaderClocks() {
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const clocks = [
+    { tz: 'America/New_York', flag: '🇺🇸', label: 'New York', color: 'from-blue-600 to-indigo-800', border: 'border-blue-400' },
+    { tz: 'America/Toronto', flag: '🇨🇦', label: 'Toronto', color: 'from-red-600 to-red-800', border: 'border-red-400' },
+    { tz: 'America/Mexico_City', flag: '🇲🇽', label: 'CDMX', color: 'from-green-600 to-emerald-800', border: 'border-green-400' },
+    { tz: 'Europe/Madrid', flag: '🇪🇸', label: 'España', color: 'from-yellow-500 to-red-600', border: 'border-yellow-300' },
+  ];
+
+  return (
+    <div className="flex flex-wrap gap-3 justify-center items-center">
+      {clocks.map(c => {
+        const time = now.toLocaleTimeString('es-ES', {
+          timeZone: c.tz,
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        });
+        const date = now.toLocaleDateString('es-ES', {
+          timeZone: c.tz,
+          weekday: 'short',
+          day: '2-digit',
+          month: 'short',
+        });
+        const offset = now.toLocaleTimeString('en-US', {
+          timeZone: c.tz,
+          timeZoneName: 'shortOffset',
+        }).split(' ').pop() || '';
+        return (
+          <div key={c.tz} className={`bg-gradient-to-br ${c.color} rounded-xl px-4 py-2 shadow-lg border-2 ${c.border} min-w-[130px] text-center`}>
+            <div className="flex items-center justify-center gap-1.5 mb-0.5">
+              <span className="text-sm">{c.flag}</span>
+              <span className="text-white font-bold text-xs uppercase tracking-wider">{c.label}</span>
+            </div>
+            <div className="text-xl font-mono font-bold text-white drop-shadow">{time}</div>
+            <div className="text-[10px] text-white/60 mt-0.5">{date} · {offset}</div>
+          </div>
+        );
+      })}
     </div>
   );
 }

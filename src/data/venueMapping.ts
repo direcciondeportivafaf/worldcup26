@@ -51,8 +51,8 @@ const GROUP_VENUES: Record<string, VenueInfo[]> = {
     { city: 'Miami Gardens', country: 'USA' },
   ],
   'H': [
+    { city: 'Atlanta', country: 'USA' },
     { city: 'Vancouver', country: 'Canada' },
-    { city: 'Nueva York/NJ', country: 'USA' },
     { city: 'Houston', country: 'USA' },
   ],
   'I': [
