@@ -1,4 +1,5 @@
 import { matches as staticMatches, teams, Match } from '../data/matches';
+import FlagImg from './FlagImg';
 
 export default function TournamentStats({ matches: apiMatches }: { matches: Match[] }) {
   const hasGroupStageMatches = apiMatches.some(m => m.round === 'Fase de Grupos');
@@ -179,7 +180,7 @@ export default function TournamentStats({ matches: apiMatches }: { matches: Matc
                 }`}>
                   {idx + 1}
                 </span>
-                <span className="text-xl">{item.team.flag}</span>
+                <FlagImg teamId={item.team.id} emoji={item.team.flag} size="md" />
                 <span className="text-white text-sm flex-1">{item.team.name}</span>
                 <span className="bg-white/10 text-white px-2 py-0.5 rounded-full text-sm font-bold">
                   {item.goals} goles

@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Match, teams, getTeam } from '../data/matches';
+import FlagImg from './FlagImg';
 
 export default function SearchBar({ matches }: { matches: Match[] }) {
   const [query, setQuery] = useState('');
@@ -75,7 +76,7 @@ export default function SearchBar({ matches }: { matches: Match[] }) {
                 onClick={() => setQuery(team.name)}
                 className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg p-3 hover:bg-white/10 transition-all text-left"
               >
-                <span className="text-2xl">{team.flag}</span>
+                <FlagImg teamId={team.id} emoji={team.flag} size="lg" />
                 <div>
                   <span className="text-white font-medium text-sm block">{team.name}</span>
                   <span className="text-white/40 text-xs">Grupo {team.group}</span>
@@ -99,7 +100,7 @@ export default function SearchBar({ matches }: { matches: Match[] }) {
         <div className="max-w-2xl mx-auto">
           {/* Team header */}
           <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-2xl p-6 border border-white/15 text-center mb-4">
-            <span className="text-5xl block mb-2">{selectedTeam.flag}</span>
+            <div className="mb-2"><FlagImg teamId={selectedTeam.id} emoji={selectedTeam.flag} size="xl" /></div>
             <h3 className="text-2xl font-black text-white">{selectedTeam.name}</h3>
             <span className="text-white/50 text-sm">Grupo {selectedTeam.group}</span>
           </div>
@@ -149,7 +150,7 @@ export default function SearchBar({ matches }: { matches: Match[] }) {
                     </div>
                     <div className="text-left flex-1">
                       <div className="flex items-center gap-1">
-                        <span className="text-lg">{opponent.flag}</span>
+                        <FlagImg teamId={opponent.id} emoji={opponent.flag} size="md" />
                         <span className="text-white font-medium text-sm">{opponent.name}</span>
                       </div>
                     </div>
@@ -180,7 +181,7 @@ export default function SearchBar({ matches }: { matches: Match[] }) {
                 onClick={() => setQuery(team.name)}
                 className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg p-2 hover:bg-white/10 transition-all text-left"
               >
-                <span className="text-xl">{team.flag}</span>
+                <FlagImg teamId={team.id} emoji={team.flag} size="sm" />
                 <div>
                   <span className="text-white text-xs font-medium block truncate">{team.name}</span>
                   <span className="text-white/30 text-xs">Grupo {team.group}</span>

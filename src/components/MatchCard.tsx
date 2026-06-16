@@ -1,4 +1,5 @@
 import { Match, getTeam, hostCities } from '../data/matches';
+import FlagImg from './FlagImg';
 
 export default function MatchCard({ match, compact = false }: { match: Match; compact?: boolean }) {
   const t1 = match.team1 === 'TBD' ? { id: 'TBD', name: 'Por definir', code: 'TBD', flag: '❓', group: '' } : getTeam(match.team1);
@@ -52,7 +53,7 @@ export default function MatchCard({ match, compact = false }: { match: Match; co
         <div className="flex-1 flex items-center justify-between px-2">
           <div className="flex items-center gap-2 flex-1 justify-end">
             <span className="text-sm font-medium text-white text-right flex-1">{t1.name}</span>
-            <span className="text-lg">{t1.flag}</span>
+            <FlagImg teamId={t1.id} emoji={t1.flag} size="md" />
           </div>
           <div className={`px-3 py-1 rounded-lg text-center min-w-[60px] ${
             match.status === 'completed'
@@ -65,7 +66,7 @@ export default function MatchCard({ match, compact = false }: { match: Match; co
             {match.penalties && <div className="text-xs mt-0.5">({match.penalties})</div>}
           </div>
           <div className="flex items-center gap-2 flex-1">
-            <span className="text-lg">{t2.flag}</span>
+            <FlagImg teamId={t2.id} emoji={t2.flag} size="md" />
             <span className="text-sm font-medium text-white flex-1">{t2.name}</span>
           </div>
         </div>
@@ -100,7 +101,7 @@ export default function MatchCard({ match, compact = false }: { match: Match; co
       <div className="p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex-1 text-right pr-4">
-            <span className="text-4xl block mb-2">{t1.flag}</span>
+            <div className="mb-2"><FlagImg teamId={t1.id} emoji={t1.flag} size="xl" /></div>
             <span className="text-white font-bold text-lg">{t1.name}</span>
           </div>
 
@@ -121,7 +122,7 @@ export default function MatchCard({ match, compact = false }: { match: Match; co
           </div>
 
           <div className="flex-1 text-left pl-4">
-            <span className="text-4xl block mb-2">{t2.flag}</span>
+            <div className="mb-2"><FlagImg teamId={t2.id} emoji={t2.flag} size="xl" /></div>
             <span className="text-white font-bold text-lg">{t2.name}</span>
           </div>
         </div>

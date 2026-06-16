@@ -1,5 +1,6 @@
 import { matches as staticMatches, teams, Match } from '../data/matches';
 import { ApiStanding } from '../services/api';
+import FlagImg from './FlagImg';
 
 interface TeamStanding {
   team: typeof teams[0];
@@ -139,7 +140,7 @@ export default function Standings({ standings: apiStandings, matches: apiMatches
                           </td>
                           <td className="py-3 px-2">
                             <div className="flex items-center gap-2">
-                              <span className="text-xl">{standing.teamFlag}</span>
+                              <FlagImg teamId={standing.teamId} emoji={standing.teamFlag} size="md" />
                               <div>
                                 <span className="text-white font-semibold text-sm">{standing.teamName}</span>
                                 {isQualified && <span className="ml-2 text-green-400 text-xs">✓ Clasificado</span>}
@@ -225,7 +226,7 @@ export default function Standings({ standings: apiStandings, matches: apiMatches
                         </td>
                         <td className="py-3 px-2">
                           <div className="flex items-center gap-2">
-                            <span className="text-xl">{standing.team.flag}</span>
+                              <FlagImg teamId={standing.team.id} emoji={standing.team.flag} size="md" />
                             <div>
                               <span className="text-white font-semibold text-sm">{standing.team.name}</span>
                               {isQualified && <span className="ml-2 text-green-400 text-xs">✓ Clasificado</span>}

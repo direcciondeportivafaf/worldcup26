@@ -6,6 +6,7 @@ import Stadiums from './components/Stadiums';
 import TournamentStats from './components/TournamentStats';
 import Countdown from './components/Countdown';
 import SearchBar from './components/SearchBar';
+import FlagImg from './components/FlagImg';
 import { matches as staticMatches, teams, getTeam, Match } from './data/matches';
 import { useLiveMatches } from './hooks/useLiveMatches';
 
@@ -322,7 +323,7 @@ function HomePage({ matches, standings: apiStandings }: { matches: typeof static
                   onClick={() => { setSelectedHomeTeam(team.id); setHomeQuery(team.name); }}
                   className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/10 transition-all text-left"
                 >
-                  <span className="text-xl">{team.flag}</span>
+                  <FlagImg teamId={team.id} emoji={team.flag} size="sm" />
                   <div>
                     <span className="text-white font-medium text-sm">{team.name}</span>
                     <span className="text-white/40 text-xs ml-2">Grupo {team.group}</span>
@@ -348,7 +349,7 @@ function HomePage({ matches, standings: apiStandings }: { matches: typeof static
                   <div key={match.id} className="bg-red-500/10 border border-red-500/30 rounded-xl p-3">
                     <div className="flex items-center justify-center gap-3">
                       <div className="text-center min-w-[60px]">
-                        <span className="text-2xl block">{t1?.flag || '❓'}</span>
+                        {t1 ? <FlagImg teamId={t1.id} emoji={t1.flag} size="lg" /> : <span className="text-2xl">❓</span>}
                         <span className="text-white font-bold text-xs block mt-0.5">{t1?.name || match.team1}</span>
                       </div>
                       <div className="text-center px-2">
@@ -361,7 +362,7 @@ function HomePage({ matches, standings: apiStandings }: { matches: typeof static
                         </div>
                       </div>
                       <div className="text-center min-w-[60px]">
-                        <span className="text-2xl block">{t2?.flag || '❓'}</span>
+                        {t2 ? <FlagImg teamId={t2.id} emoji={t2.flag} size="lg" /> : <span className="text-2xl">❓</span>}
                         <span className="text-white font-bold text-xs block mt-0.5">{t2?.name || match.team2}</span>
                       </div>
                     </div>
@@ -394,7 +395,7 @@ function HomePage({ matches, standings: apiStandings }: { matches: typeof static
         <div className="max-w-2xl mx-auto">
           {/* Team header */}
           <div className="bg-gradient-to-r from-white/10 to-white/5 rounded-2xl p-6 border border-white/15 text-center mb-4">
-            <span className="text-5xl block mb-2">{homeSelectedTeam.flag}</span>
+            <div className="mb-2"><FlagImg teamId={homeSelectedTeam.id} emoji={homeSelectedTeam.flag} size="xl" /></div>
             <h3 className="text-2xl font-black text-white">{homeSelectedTeam.name}</h3>
             <span className="text-white/50 text-sm">Grupo {homeSelectedTeam.group}</span>
           </div>
@@ -410,12 +411,12 @@ function HomePage({ matches, standings: apiStandings }: { matches: typeof static
                   return (
                     <>
                       <div className="text-center">
-                        <span className="text-3xl block">{t1?.flag || '❓'}</span>
+                        {t1 ? <FlagImg teamId={t1.id} emoji={t1.flag} size="lg" /> : <span className="text-3xl">❓</span>}
                         <span className="text-white font-bold text-xs block mt-0.5">{t1?.name || teamCountdown.match.team1}</span>
                       </div>
                       <span className="text-white/40 text-lg font-bold">VS</span>
                       <div className="text-center">
-                        <span className="text-3xl block">{t2?.flag || '❓'}</span>
+                        {t2 ? <FlagImg teamId={t2.id} emoji={t2.flag} size="lg" /> : <span className="text-3xl">❓</span>}
                         <span className="text-white font-bold text-xs block mt-0.5">{t2?.name || teamCountdown.match.team2}</span>
                       </div>
                     </>
@@ -479,7 +480,7 @@ function HomePage({ matches, standings: apiStandings }: { matches: typeof static
                           </td>
                           <td className="py-2 px-1.5">
                             <div className="flex items-center gap-1.5">
-                              <span className="text-sm">{s.teamFlag || s.team?.flag}</span>
+                              <FlagImg teamId={s.teamId} emoji={s.teamFlag || s.team?.flag || '🏳️'} size="sm" />
                               <span className={`text-xs font-medium ${isCurrentTeam ? 'text-green-400 font-bold' : 'text-white/80'}`}>
                                 {s.teamName || s.team?.name}
                               </span>
@@ -552,7 +553,7 @@ function HomePage({ matches, standings: apiStandings }: { matches: typeof static
                     </div>
                     <div className="text-left flex-1">
                       <div className="flex items-center gap-1">
-                        <span className="text-lg">{opponent?.flag}</span>
+                        {opponent ? <FlagImg teamId={opponent.id} emoji={opponent.flag} size="md" /> : <span className="text-lg">🏳️</span>}
                         <span className="text-white font-medium text-sm">{opponent?.name || match.team2}</span>
                       </div>
                     </div>
@@ -608,7 +609,7 @@ function HomePage({ matches, standings: apiStandings }: { matches: typeof static
                 <div key={match.id} className="bg-gradient-to-r from-white/10 to-white/5 rounded-2xl p-4 border border-white/15">
                   <div className="flex items-center justify-center gap-4">
                     <div className="text-center min-w-[80px]">
-                      <span className="text-3xl block">{t1?.flag || '❓'}</span>
+                      {t1 ? <FlagImg teamId={t1.id} emoji={t1.flag} size="lg" /> : <span className="text-3xl">❓</span>}
                       <span className="text-white font-bold block mt-1 text-xs">{t1?.name || match.team1}</span>
                     </div>
                     <div className="text-center px-3">
@@ -622,7 +623,7 @@ function HomePage({ matches, standings: apiStandings }: { matches: typeof static
                       <div className="text-white/30 text-xs mt-0.5">{match.city}</div>
                     </div>
                     <div className="text-center min-w-[80px]">
-                      <span className="text-3xl block">{t2?.flag || '❓'}</span>
+                      {t2 ? <FlagImg teamId={t2.id} emoji={t2.flag} size="lg" /> : <span className="text-3xl">❓</span>}
                       <span className="text-white font-bold block mt-1 text-xs">{t2?.name || match.team2}</span>
                     </div>
                   </div>
@@ -676,7 +677,7 @@ function HomePage({ matches, standings: apiStandings }: { matches: typeof static
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
           {teams.sort((a, b) => a.group.localeCompare(b.group)).map((team) => (
             <div key={team.name} className="bg-white/5 rounded-lg p-3 border border-white/10 text-center hover:bg-white/10 transition-all">
-              <span className="text-2xl block">{team.flag}</span>
+              <FlagImg teamId={team.id} emoji={team.flag} size="lg" />
               <span className="text-white text-xs font-medium block mt-1 truncate">{team.name}</span>
               <span className="text-white/30 text-xs">Grupo {team.group}</span>
             </div>
