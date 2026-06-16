@@ -19,8 +19,7 @@ const NAME_MAP: Record<string, string> = {
   'sudáfrica': 'south africa',
   'japón': 'japan',
   'países bajos': 'netherlands',
-  'paìses bajos': 'netherlands',
-  'boscia y herzegovina': 'bosnia & herzegovina',
+  'bosnia y herzegovina': 'bosnia & herzegovina',
   'bosnia y herzegovina': 'bosnia & herzegovina',
   'costa de marfil': 'ivory coast',
   'nueva zelanda': 'new zealand',
@@ -34,7 +33,6 @@ const NAME_MAP: Record<string, string> = {
   'inglaterra': 'england',
   'argelia': 'algeria',
   'jordania': 'jordan',
-  'RD del Congo': 'dr congo',
   'rd del congo': 'dr congo',
   'irak': 'iraq',
   'marruecos': 'morocco',
@@ -54,7 +52,6 @@ const NAME_MAP: Record<string, string> = {
   'colombia': 'colombia',
   'portugal': 'portugal',
   'suiza': 'switzerland',
-  'uruguay': 'uruguay',
   'catar': 'qatar',
   'haití': 'haiti',
   'curazao': 'curacao',
@@ -63,6 +60,30 @@ const NAME_MAP: Record<string, string> = {
   'uzbekistán': 'uzbekistan',
   'cabo verde': 'cape verde',
 };
+
+// Reverse map: normalized English → our team ID
+const ESPN_TO_ID: Record<string, string> = {};
+const TEAM_IDS: Record<string, string> = {
+  'méxico': 'mex', 'corea del sur': 'kor', 'chequia': 'cze', 'sudáfrica': 'rsa',
+  'suiza': 'sui', 'canadá': 'can', 'catar': 'qat', 'bosnia y herzegovina': 'bih',
+  'escocia': 'sco', 'marruecos': 'mar', 'brasil': 'bra', 'haití': 'hai',
+  'estados unidos': 'usa', 'australia': 'aus', 'turquía': 'tur', 'paraguay': 'par',
+  'alemania': 'ger', 'costa de marfil': 'civ', 'ecuador': 'ecu', 'curazao': 'cuw',
+  'suecia': 'swe', 'japón': 'jpn', 'países bajos': 'ned', 'túnez': 'tun',
+  'egipto': 'egy', 'bélgica': 'bel', 'irán': 'irn', 'nueva zelanda': 'nzl',
+  'cabo verde': 'cpv', 'arabia saudí': 'ksa', 'españa': 'esp', 'uruguay': 'ury',
+  'francia': 'fra', 'irak': 'irq', 'noruega': 'nor', 'senegal': 'sen',
+  'argelia': 'alg', 'argentina': 'arg', 'jordania': 'jor', 'austria': 'aut',
+  'rd del congo': 'cod', 'colombia': 'col', 'portugal': 'por', 'uzbekistán': 'uzb',
+  'inglaterra': 'eng', 'ghana': 'gha', 'croacia': 'cro', 'panamá': 'pan',
+};
+for (const [esName, id] of Object.entries(TEAM_IDS)) {
+  ESPN_TO_ID[norm(esName)] = id;
+}
+
+function resolveTeamId(espnDisplayName: string): string {
+  return ESPN_TO_ID[norm(espnDisplayName)] || '';
+}
 
 function matchTeamName(ourName: string, espnName: string): boolean {
   const a = norm(ourName);
@@ -151,7 +172,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             injuryTime: null,
             type: ke.type?.type === 'penalty-goal' ? 'PENALTY' :
                    ke.type?.type === 'own-goal' ? 'OWN_GOAL' : 'REGULAR',
-            team: { id: 0, name: ke.team?.displayName || '' },
+            team: { id: resolveTeamId(ke.team?.displayName || ''), name: ke.team?.displayName || '' },
             scorer: { id: 0, name: ke.participants?.[0]?.athlete?.displayName || '' },
             assist: ke.participants?.[1]?.athlete
               ? { id: 0, name: ke.participants[1].athlete.displayName }
@@ -179,6 +200,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Fallback: parse goals from scoreboard details if summary didn't provide them
     if (goals.length === 0 && details.length > 0) {
       console.log(`[match-detail] Using ${details.length} scoreboard details`);
+      // Build team ID → name lookup from competitors
+      const competitors = event.competitions?.[0]?.competitors || [];
+      const teamNameById: Record<string, string> = {};
+      competitors.forEach((c: any) => {
+        if (c.team?.id && c.team?.displayName) {
+          teamNameById[c.team.id] = c.team.displayName;
+        }
+      });
+
       goals = details
         .filter((d: any) => d.scoringPlay && d.type?.id)
         .map((d: any) => {
@@ -187,12 +217,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const isPenalty = text.toLowerCase().includes('penalty');
           const isOwnGoal = text.toLowerCase().includes('own goal') || text.toLowerCase().includes('own-goal');
           const scorer = d.athletesInvolved?.[0];
+          const teamId = String(d.team?.id || '');
+          const teamName = teamNameById[teamId] || teamId;
 
           return {
             minute,
             injuryTime: null,
             type: isPenalty ? 'PENALTY' : isOwnGoal ? 'OWN_GOAL' : 'REGULAR',
-            team: { id: 0, name: d.team?.id || '' },
+            team: { id: resolveTeamId(teamName), name: teamName },
             scorer: { id: 0, name: scorer?.displayName || '' },
             assist: d.athletesInvolved?.[1]
               ? { id: 0, name: d.athletesInvolved[1].displayName }
