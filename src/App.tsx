@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import DualClock from './components/DualClock';
 import Standings from './components/Standings';
 import MatchSchedule from './components/MatchSchedule';
 import Stadiums from './components/Stadiums';
