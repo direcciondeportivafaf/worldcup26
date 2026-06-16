@@ -1,7 +1,19 @@
+import { useState } from 'react';
 import { Match, getTeam, hostCities } from '../data/matches';
+import { fetchMatchDetail, MatchGoal } from '../services/api';
 import FlagImg from './FlagImg';
 
+function GoalIcon({ type }: { type: string }) {
+  if (type === 'PENALTY') return <span className="text-yellow-400" title="Penalti">⚽</span>;
+  if (type === 'OWN_GOAL') return <span className="text-red-400" title="Autogol">⚽</span>;
+  return <span className="text-green-400">⚽</span>;
+}
+
 export default function MatchCard({ match, compact = false }: { match: Match; compact?: boolean }) {
+  const [showGoals, setShowGoals] = useState(false);
+  const [goals, setGoals] = useState<MatchGoal[]>([]);
+  const [loadingGoals, setLoadingGoals] = useState(false);
+
   const t1 = match.team1 === 'TBD' ? { id: 'TBD', name: 'Por definir', code: 'TBD', flag: '❓', group: '' } : getTeam(match.team1);
   const t2 = match.team2 === 'TBD' ? { id: 'TBD', name: 'Por definir', code: 'TBD', flag: '❓', group: '' } : getTeam(match.team2);
 
@@ -11,7 +23,6 @@ export default function MatchCard({ match, compact = false }: { match: Match; co
 
   const matchDate = new Date(`${match.date}T${match.time}:00Z`);
 
-  // Show Spain time (CET/CEST)
   const spainTimeStr = matchDate.toLocaleTimeString('es-ES', {
     timeZone: 'Europe/Madrid',
     hour: '2-digit',
@@ -19,7 +30,6 @@ export default function MatchCard({ match, compact = false }: { match: Match; co
     hour12: false,
   });
 
-  // Also show venue local time for reference
   const localTimeStr = matchDate.toLocaleTimeString('es-ES', {
     timeZone: localTz,
     hour: '2-digit',
@@ -37,6 +47,28 @@ export default function MatchCard({ match, compact = false }: { match: Match; co
   const isSemiFinal = match.round === 'Semifinales';
   const isQuarterFinal = match.round === 'Cuartos';
   const isKnockout = match.round !== 'Fase de Grupos';
+
+  const handleToggleGoals = async () => {
+    if (showGoals) {
+      setShowGoals(false);
+      return;
+    }
+    if (goals.length > 0) {
+      setShowGoals(true);
+      return;
+    }
+    // Fetch match detail
+    setLoadingGoals(true);
+    try {
+      const detail = await fetchMatchDetail(match.id);
+      if (detail) setGoals(detail.goals);
+      setShowGoals(true);
+    } catch (e) {
+      console.error('Failed to load match goals:', e);
+    } finally {
+      setLoadingGoals(false);
+    }
+  };
 
   if (compact) {
     return (
@@ -126,6 +158,42 @@ export default function MatchCard({ match, compact = false }: { match: Match; co
             <span className="text-white font-bold text-lg">{t2.name}</span>
           </div>
         </div>
+
+        {/* Goal scorers section */}
+        {match.status === 'completed' && match.score1 !== undefined && (
+          <div className="mb-3">
+            <button
+              onClick={handleToggleGoals}
+              disabled={loadingGoals}
+              className="w-full text-center text-xs text-white/50 hover:text-white/80 transition-colors py-1"
+            >
+              {loadingGoals ? '⏳ Cargando...' : showGoals ? '▲ Ocultar goles' : '▼ Ver goleadores'}
+            </button>
+            {showGoals && goals.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {goals.map((goal, idx) => {
+                  const isHome = goal.team.id === getTeam(match.team1).id;
+                  return (
+                    <div key={idx} className="flex items-center gap-2 text-sm bg-white/5 rounded-lg px-3 py-1.5">
+                      <span className="text-white/40 text-xs w-8 text-right">{goal.minute}'{goal.injuryTime ? `+${goal.injuryTime}` : ''}</span>
+                      <GoalIcon type={goal.type} />
+                      <span className="text-white font-medium flex-1">{goal.scorer.name}</span>
+                      {goal.assist && (
+                        <span className="text-white/40 text-xs">({goal.assist.name})</span>
+                      )}
+                      <span className={`text-xs px-1.5 py-0.5 rounded ${isHome ? 'bg-blue-500/20 text-blue-300' : 'bg-red-500/20 text-red-300'}`}>
+                        {isHome ? t1.name : t2.name}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {showGoals && goals.length === 0 && !loadingGoals && (
+              <div className="mt-2 text-center text-white/30 text-xs">No hay datos de goles disponibles</div>
+            )}
+          </div>
+        )}
 
         <div className="bg-white/5 rounded-lg p-3 space-y-1">
           <div className="flex items-center gap-2 text-sm">

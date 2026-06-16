@@ -363,3 +363,46 @@ export async function fetchScorers(): Promise<Scorer[]> {
     return [];
   }
 }
+
+// ========== Match Detail ==========
+export interface MatchGoal {
+  minute: number;
+  injuryTime: number | null;
+  type: 'REGULAR' | 'PENALTY' | 'OWN_GOAL';
+  team: { id: number; name: string };
+  scorer: { id: number; name: string };
+  assist: { id: number; name: string } | null;
+  score: { home: number; away: number };
+}
+
+export interface MatchDetail {
+  id: number;
+  goals: MatchGoal[];
+  penalties: { player: { id: number; name: string }; scored: boolean }[];
+  bookings: { minute: number; player: { id: number; name: string }; card: string }[];
+}
+
+export async function fetchMatchDetail(matchId: number): Promise<MatchDetail | null> {
+  try {
+    const url = isDev
+      ? `${FOOTBALL_DATA_DIRECT}/matches/${matchId}`
+      : `/api/match/${matchId}?_t=${Date.now()}`;
+
+    const headers: Record<string, string> = isDev
+      ? { 'X-Auth-Token': FOOTBALL_DATA_KEY }
+      : {};
+
+    const res = await fetch(url, { headers, cache: 'no-store' });
+    if (!res.ok) throw new Error(`Match detail: ${res.status}`);
+    const data = await res.json();
+    return {
+      id: data.id,
+      goals: data.goals || [],
+      penalties: data.penalties || [],
+      bookings: data.bookings || [],
+    };
+  } catch (err) {
+    console.warn(`[API] Match detail ${matchId} failed`, err);
+    return null;
+  }
+}
