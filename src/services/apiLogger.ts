@@ -13,17 +13,29 @@ interface ApiLogEntry {
 interface ClientInfo {
   id: string;
   lastSeen: number;
+  firstSeen: number;
   userAgent: string;
+  visits: number;
 }
 
 let logEntries: ApiLogEntry[] = [];
 let nextId = 1;
 let listeners: (() => void)[] = [];
 
-const CLIENT_KEY = 'wc26_console_client';
-const HEARTBEAT_KEY = 'wc26_console_heartbeat';
-const CLIENTS_KEY = 'wc26_console_clients';
-const CLIENT_ID = Math.random().toString(36).slice(2, 10);
+const ACTIVE_CLIENTS_KEY = 'wc26_console_clients';
+const ALL_CLIENTS_KEY = 'wc26_console_all_clients';
+const CLIENT_ID_KEY = 'wc26_console_client_id';
+
+// Persistent client ID across reloads
+function getOrCreateClientId(): string {
+  let id = localStorage.getItem(CLIENT_ID_KEY);
+  if (!id) {
+    id = Math.random().toString(36).slice(2, 10);
+    localStorage.setItem(CLIENT_ID_KEY, id);
+  }
+  return id;
+}
+const CLIENT_ID = getOrCreateClientId();
 
 function notifyListeners() {
   listeners.forEach(fn => fn());
@@ -38,22 +50,46 @@ export function getLogEntries(): ApiLogEntry[] {
   return logEntries;
 }
 
-// Client tracking
+// Client tracking — active (last 15s) and all-time unique
 function updateClientHeartbeat() {
   const now = Date.now();
-  const clients: Record<string, ClientInfo> = JSON.parse(localStorage.getItem(CLIENTS_KEY) || '{}');
-  clients[CLIENT_ID] = { id: CLIENT_ID, lastSeen: now, userAgent: navigator.userAgent.slice(0, 80) };
-  // Prune stale clients (older than 15s)
-  Object.keys(clients).forEach(id => {
-    if (now - clients[id].lastSeen > 15000) delete clients[id];
+  const ua = navigator.userAgent.slice(0, 100);
+
+  // Active clients (pruned)
+  const active: Record<string, ClientInfo> = JSON.parse(localStorage.getItem(ACTIVE_CLIENTS_KEY) || '{}');
+  active[CLIENT_ID] = {
+    id: CLIENT_ID,
+    lastSeen: now,
+    firstSeen: active[CLIENT_ID]?.firstSeen || now,
+    userAgent: ua,
+    visits: (active[CLIENT_ID]?.visits || 0) + 1,
+  };
+  Object.keys(active).forEach(id => {
+    if (now - active[id].lastSeen > 15000) delete active[id];
   });
-  localStorage.setItem(CLIENTS_KEY, JSON.stringify(clients));
+  localStorage.setItem(ACTIVE_CLIENTS_KEY, JSON.stringify(active));
+
+  // All-time unique clients (never pruned)
+  const all: Record<string, ClientInfo> = JSON.parse(localStorage.getItem(ALL_CLIENTS_KEY) || '{}');
+  all[CLIENT_ID] = {
+    id: CLIENT_ID,
+    lastSeen: now,
+    firstSeen: all[CLIENT_ID]?.firstSeen || now,
+    userAgent: ua,
+    visits: (all[CLIENT_ID]?.visits || 0) + 1,
+  };
+  localStorage.setItem(ALL_CLIENTS_KEY, JSON.stringify(all));
 }
 
 export function getConnectedClients(): ClientInfo[] {
-  const clients: Record<string, ClientInfo> = JSON.parse(localStorage.getItem(CLIENTS_KEY) || '{}');
+  const active: Record<string, ClientInfo> = JSON.parse(localStorage.getItem(ACTIVE_CLIENTS_KEY) || '{}');
   const now = Date.now();
-  return Object.values(clients).filter(c => now - c.lastSeen < 15000);
+  return Object.values(active).filter(c => now - c.lastSeen < 15000);
+}
+
+export function getAllUniqueClients(): ClientInfo[] {
+  const all: Record<string, ClientInfo> = JSON.parse(localStorage.getItem(ALL_CLIENTS_KEY) || '{}');
+  return Object.values(all).sort((a, b) => b.lastSeen - a.lastSeen);
 }
 
 export function getClientId(): string {
@@ -89,7 +125,6 @@ window.fetch = async function (...args: Parameters<typeof fetch>): Promise<Respo
   const url = typeof args[0] === 'string' ? args[0] : args[0]?.url || '';
   const method = (args[1]?.method as string) || 'GET';
 
-  // Only log our API calls
   if (!url.includes('/api/') && !url.includes('football-data.org') && !url.includes('site.api.espn.com')) {
     return originalFetch.apply(this, args);
   }
