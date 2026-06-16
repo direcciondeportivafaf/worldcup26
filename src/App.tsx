@@ -133,7 +133,7 @@ export default function App() {
           <HomePage matches={matches} standings={standings} />
         )}
         {activeTab === 'buscar' && (
-          <SearchBar matches={matches} standings={standings} />
+          <SearchBar matches={matches} standings={standings} scorers={scorers} />
         )}
         {activeTab === 'partidos' && (
           <MatchSchedule

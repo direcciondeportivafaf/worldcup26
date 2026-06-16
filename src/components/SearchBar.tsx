@@ -1,9 +1,9 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Match, teams, getTeam } from '../data/matches';
-import { ApiStanding } from '../services/api';
+import { ApiStanding, Scorer } from '../services/api';
 import FlagImg from './FlagImg';
 
-export default function SearchBar({ matches, standings: apiStandings }: { matches: Match[]; standings: Record<string, ApiStanding[]> }) {
+export default function SearchBar({ matches, standings: apiStandings, scorers }: { matches: Match[]; standings: Record<string, ApiStanding[]>; scorers: Scorer[] }) {
   const [query, setQuery] = useState('');
   const [now, setNow] = useState(new Date());
 
@@ -84,6 +84,18 @@ export default function SearchBar({ matches, standings: apiStandings }: { matche
     results.sort((a, b) => b.points - a.points || b.goalDiff - a.goalDiff || b.goalsFor - a.goalsFor);
     return results;
   }, [selectedTeam, apiStandings, matches]);
+
+  // Team's top scorers from the tournament
+  const teamScorers = useMemo(() => {
+    if (!selectedTeam) return [];
+    const teamCode = selectedTeam.code.toUpperCase();
+    const teamId = selectedTeam.id.toLowerCase();
+    return scorers.filter(s => {
+      const sTla = s.team.tla.toUpperCase();
+      const sId = s.team.tla.toLowerCase();
+      return sTla === teamCode || sId === teamId;
+    }).sort((a, b) => b.goals - a.goals);
+  }, [selectedTeam, scorers]);
 
   const formatTime = (date: string, time: string) => {
     const d = new Date(`${date}T${time}:00Z`);
@@ -271,6 +283,29 @@ export default function SearchBar({ matches, standings: apiStandings }: { matche
                     })}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          )}
+
+          {/* Team top scorers */}
+          {teamScorers.length > 0 && (
+            <div className="bg-gradient-to-br from-yellow-500/10 to-amber-600/5 rounded-2xl p-4 border border-yellow-500/20 mb-4">
+              <h4 className="text-sm font-bold text-white/70 mb-3 text-center">⚽ Goleadores del torneo</h4>
+              <div className="space-y-1.5">
+                {teamScorers.map((scorer, idx) => (
+                  <div key={`${scorer.player.id}-${idx}`} className="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-1.5">
+                    <span className={`text-xs font-bold w-5 text-center ${
+                      idx === 0 ? 'text-yellow-400' : 'text-white/40'
+                    }`}>{idx + 1}</span>
+                    <span className="text-white font-medium text-sm flex-1">{scorer.player.name}</span>
+                    <span className="bg-green-500/20 text-green-400 font-bold px-2 py-0.5 rounded-full text-xs">
+                      {scorer.goals} ⚽
+                    </span>
+                    {scorer.assists != null && scorer.assists > 0 && (
+                      <span className="text-white/40 text-xs">{scorer.assists} asist.</span>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           )}
