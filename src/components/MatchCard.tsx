@@ -61,7 +61,7 @@ export default function MatchCard({ match, compact = false }: { match: Match; co
     setLoadingGoals(true);
     setGoalError('');
     try {
-      const detail = await fetchMatchDetail(match.id);
+      const detail = await fetchMatchDetail(match.id, t1.name, t2.name);
       if (detail) {
         setGoals(detail.goals);
         if (detail.goals.length === 0) setGoalError('No hay datos de goles para este partido');

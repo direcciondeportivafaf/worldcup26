@@ -382,33 +382,27 @@ export interface MatchDetail {
   bookings: { minute: number; player: { id: number; name: string }; card: string }[];
 }
 
-export async function fetchMatchDetail(matchId: number): Promise<MatchDetail | null> {
+export async function fetchMatchDetail(matchId: number, team1Name: string, team2Name: string): Promise<MatchDetail | null> {
   try {
-    const url = isDev
-      ? `${FOOTBALL_DATA_DIRECT}/matches/${matchId}`
-      : `/api/match/${matchId}?_t=${Date.now()}`;
+    const url = `/api/match-detail?t1=${encodeURIComponent(team1Name)}&t2=${encodeURIComponent(team2Name)}&_t=${Date.now()}`;
 
-    const headers: Record<string, string> = isDev
-      ? { 'X-Auth-Token': FOOTBALL_DATA_KEY }
-      : {};
-
-    console.log(`[API] Fetching match detail: ${url}`);
-    const res = await fetch(url, { headers, cache: 'no-store' });
+    console.log(`[API] Fetching match goals: ${team1Name} vs ${team2Name}`);
+    const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) {
       const errText = await res.text().catch(() => '');
-      console.error(`[API] Match detail ${matchId} failed: ${res.status}`, errText);
+      console.error(`[API] Match goals failed: ${res.status}`, errText);
       throw new Error(`Match detail: ${res.status}`);
     }
     const data = await res.json();
-    console.log(`[API] Match detail ${matchId}: ${data.goals?.length || 0} goals`);
+    console.log(`[API] Match goals loaded: ${data.goals?.length || 0} goals`);
     return {
-      id: data.id,
+      id: matchId,
       goals: data.goals || [],
       penalties: data.penalties || [],
       bookings: data.bookings || [],
     };
   } catch (err) {
-    console.warn(`[API] Match detail ${matchId} failed`, err);
+    console.warn(`[API] Match goals failed for ${team1Name} vs ${team2Name}`, err);
     return null;
   }
 }

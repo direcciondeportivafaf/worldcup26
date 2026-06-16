@@ -89,14 +89,17 @@ export default function ConsoleDashboard() {
 
   const handleLoadAllGoals = async () => {
     triggerRefresh('goals', async () => {
-      const api = await import('../services/api');
-      const matches = await api.fetchMatches();
+      const { fetchMatches, fetchMatchDetail } = await import('../services/api');
+      const { getTeam } = await import('../data/matches');
+      const matches = await fetchMatches();
       const completed = matches.filter(m => m.status === 'completed' && m.score1 !== undefined);
       setMatchGoalProgress(`0/${completed.length}`);
       for (let i = 0; i < completed.length; i++) {
         setMatchGoalProgress(`${i + 1}/${completed.length}`);
         try {
-          await api.fetchMatchDetail(completed[i].id);
+          const t1 = getTeam(completed[i].team1);
+          const t2 = getTeam(completed[i].team2);
+          await fetchMatchDetail(completed[i].id, t1.name, t2.name);
         } catch {}
         // Rate limit: max 10 calls/min on free tier, wait 7s between calls
         if (i < completed.length - 1) {
