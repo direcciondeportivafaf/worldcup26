@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import DualClock from './components/DualClock';
 import Standings from './components/Standings';
 import MatchSchedule from './components/MatchSchedule';
@@ -11,35 +11,7 @@ import { useLiveMatches } from './hooks/useLiveMatches';
 
 type Tab = 'inicio' | 'partidos' | 'clasificacion' | 'sedes' | 'estadisticas' | 'buscar';
 
-// Current app version - bump on each deploy to force cache refresh
 const APP_VERSION = '2.1.0';
-
-function useVersionCheck() {
-  const [newVersion, setNewVersion] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Check for new version every 60 seconds
-    const check = async () => {
-      try {
-        const res = await fetch(`/index.html?t=${Date.now()}`, { cache: 'no-store' });
-        const html = await res.text();
-        const match = html.match(/app-version" content="([^"]+)"/);
-        if (match && match[1] !== APP_VERSION) {
-          setNewVersion(match[1]);
-        }
-      } catch {}
-    };
-    check();
-    const interval = setInterval(check, 60_000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const applyUpdate = () => {
-    window.location.reload();
-  };
-
-  return { newVersion, applyUpdate };
-}
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('inicio');
@@ -47,7 +19,6 @@ export default function App() {
   const [selectedGroup, setSelectedGroup] = useState('');
 
   const { matches: apiMatches, standings, loading, error, lastUpdated, refresh, dataSource } = useLiveMatches();
-  const { newVersion, applyUpdate } = useVersionCheck();
 
   // Use API data when available, fall back to static
   const matches = apiMatches.length > 0 ? apiMatches : staticMatches;
@@ -122,19 +93,6 @@ export default function App() {
                 🔄 Actualizar
               </button>
             </div>
-
-            {/* New version banner */}
-            {newVersion && (
-              <div className="mt-3 bg-green-500/20 border border-green-500/40 rounded-lg px-4 py-2 flex items-center justify-center gap-3">
-                <span className="text-green-300 text-sm">✨ Nueva versión disponible</span>
-                <button
-                  onClick={applyUpdate}
-                  className="bg-green-500 text-white px-3 py-1 rounded text-sm font-bold hover:bg-green-400 transition-colors"
-                >
-                  Actualizar ahora
-                </button>
-              </div>
-            )}
 
             {/* Error display */}
             {error && !loading && (
