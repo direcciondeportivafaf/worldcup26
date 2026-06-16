@@ -46,7 +46,7 @@ export default function App() {
   const [selectedRound, setSelectedRound] = useState('Fase de Grupos');
   const [selectedGroup, setSelectedGroup] = useState('');
 
-  const { matches: apiMatches, standings, loading, lastUpdated, refresh, dataSource } = useLiveMatches();
+  const { matches: apiMatches, standings, loading, error, lastUpdated, refresh, dataSource } = useLiveMatches();
   const { newVersion, applyUpdate } = useVersionCheck();
 
   // Use API data when available, fall back to static
