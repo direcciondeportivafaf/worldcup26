@@ -5,11 +5,12 @@ import Stadiums from './components/Stadiums';
 import TournamentStats from './components/TournamentStats';
 import Countdown from './components/Countdown';
 import SearchBar from './components/SearchBar';
+import TopScorers from './components/TopScorers';
 import FlagImg from './components/FlagImg';
 import { matches as staticMatches, teams, getTeam, Match } from './data/matches';
 import { useLiveMatches } from './hooks/useLiveMatches';
 
-type Tab = 'inicio' | 'partidos' | 'clasificacion' | 'sedes' | 'estadisticas' | 'buscar';
+type Tab = 'inicio' | 'partidos' | 'clasificacion' | 'goleadores' | 'sedes' | 'estadisticas' | 'buscar';
 
 const APP_VERSION = '2.1.0';
 
@@ -18,7 +19,7 @@ export default function App() {
   const [selectedRound, setSelectedRound] = useState('Fase de Grupos');
   const [selectedGroup, setSelectedGroup] = useState('');
 
-  const { matches: apiMatches, standings, loading, error, lastUpdated, refresh, dataSource } = useLiveMatches();
+  const { matches: apiMatches, standings, scorers, loading, error, lastUpdated, refresh, dataSource } = useLiveMatches();
 
   // Use API data when available, fall back to static
   const matches = apiMatches.length > 0 ? apiMatches : staticMatches;
@@ -28,6 +29,7 @@ export default function App() {
     { key: 'buscar', label: 'Buscar', icon: '🔍' },
     { key: 'partidos', label: 'Partidos', icon: '⚽' },
     { key: 'clasificacion', label: 'Clasificación', icon: '📊' },
+    { key: 'goleadores', label: 'Goleadores', icon: '🏆' },
     { key: 'sedes', label: 'Sedes', icon: '🏟️' },
     { key: 'estadisticas', label: 'Estadísticas', icon: '📈' },
   ];
@@ -150,6 +152,7 @@ export default function App() {
             onGroupSelect={setSelectedGroup}
           />
         )}
+        {activeTab === 'goleadores' && <TopScorers scorers={scorers} />}
         {activeTab === 'sedes' && <Stadiums />}
         {activeTab === 'estadisticas' && <TournamentStats matches={matches} />}
       </main>

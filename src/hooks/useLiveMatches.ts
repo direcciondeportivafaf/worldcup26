@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Match, matches as staticMatches } from '../data/matches';
-import { fetchMatches, ApiStanding, fetchStandings } from '../services/api';
+import { fetchMatches, ApiStanding, fetchStandings, Scorer, fetchScorers } from '../services/api';
 import { applyVenueToMatch } from '../data/venueMapping';
 
 const REFRESH_INTERVAL = 30_000; // 30 seconds
@@ -8,6 +8,7 @@ const REFRESH_INTERVAL = 30_000; // 30 seconds
 interface UseLiveMatchesResult {
   matches: Match[];
   standings: Record<string, ApiStanding[]>;
+  scorers: Scorer[];
   loading: boolean;
   error: string | null;
   lastUpdated: Date | null;
@@ -41,6 +42,7 @@ function assignVenues(matches: Match[]): Match[] {
 export function useLiveMatches(): UseLiveMatchesResult {
   const [matches, setMatches] = useState<Match[]>([]);
   const [standings, setStandings] = useState<Record<string, ApiStanding[]>>({});
+  const [scorers, setScorers] = useState<Scorer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -86,6 +88,14 @@ export function useLiveMatches(): UseLiveMatchesResult {
         console.error('[API] fetchStandings failed:', e);
       }
 
+      // Fetch scorers independently
+      try {
+        const scorersData = await fetchScorers();
+        if (mountedRef.current) setScorers(scorersData);
+      } catch (e) {
+        console.error('[API] fetchScorers failed:', e);
+      }
+
       if (mountedRef.current) setLastUpdated(new Date());
     } catch (err) {
       if (!mountedRef.current) return;
@@ -112,5 +122,5 @@ export function useLiveMatches(): UseLiveMatchesResult {
     };
   }, [loadData]);
 
-  return { matches, standings, loading, error, lastUpdated, refresh: loadData, dataSource };
+  return { matches, standings, scorers, loading, error, lastUpdated, refresh: loadData, dataSource };
 }

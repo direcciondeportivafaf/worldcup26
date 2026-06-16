@@ -313,3 +313,53 @@ export async function fetchStandings(): Promise<Record<string, ApiStanding[]>> {
     return {};
   }
 }
+
+// ========== Scorers ==========
+export interface Scorer {
+  player: {
+    id: number;
+    name: string;
+    firstName?: string;
+    lastName?: string;
+    dateOfBirth?: string;
+    nationality?: string;
+    position?: string;
+  };
+  team: {
+    id: number;
+    name: string;
+    shortName: string;
+    tla: string;
+    crest: string;
+  };
+  goals: number;
+  assists: number | null;
+  penalties: number | null;
+}
+
+async function fetchFDScorers(): Promise<Scorer[]> {
+  const cacheBuster = `_t=${Date.now()}`;
+  const url = isDev
+    ? `${FOOTBALL_DATA_DIRECT}/competitions/WC/scorers?limit=30`
+    : `/api/scorers?limit=30&${cacheBuster}`;
+
+  const headers: Record<string, string> = isDev
+    ? { 'X-Auth-Token': FOOTBALL_DATA_KEY }
+    : {};
+
+  const res = await fetch(url, { headers, cache: 'no-store' });
+  if (!res.ok) throw new Error(`football-data.org scorers: ${res.status}`);
+  const data = await res.json();
+  return data.scorers || [];
+}
+
+export async function fetchScorers(): Promise<Scorer[]> {
+  try {
+    const scorers = await fetchFDScorers();
+    console.log(`[API] Scorers: ${scorers.length} players`);
+    return scorers;
+  } catch (err) {
+    console.warn('[API] Scorers failed', err);
+    return [];
+  }
+}
