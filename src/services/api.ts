@@ -171,15 +171,16 @@ function hashStr(s: string): number {
 // ========== API: Matches ==========
 async function fetchFDMatches(): Promise<Match[]> {
   // In production, use Vercel serverless proxy. In dev, call directly.
+  const cacheBuster = `_t=${Date.now()}`;
   const url = isDev
     ? `${FOOTBALL_DATA_DIRECT}/competitions/WC/matches`
-    : '/api/matches';
+    : `/api/matches?${cacheBuster}`;
 
   const headers: Record<string, string> = isDev
     ? { 'X-Auth-Token': FOOTBALL_DATA_KEY }
     : {};
 
-  const res = await fetch(url, { headers });
+  const res = await fetch(url, { headers, cache: 'no-store' });
   if (!res.ok) throw new Error(`football-data.org: ${res.status}`);
   const data = await res.json();
   const fdMatches: FDMatch[] = data.matches || [];
@@ -212,15 +213,16 @@ export interface ApiStanding {
 }
 
 async function fetchFDStandings(): Promise<Record<string, ApiStanding[]>> {
+  const cacheBuster = `_t=${Date.now()}`;
   const url = isDev
     ? `${FOOTBALL_DATA_DIRECT}/competitions/WC/standings`
-    : '/api/standings';
+    : `/api/standings?${cacheBuster}`;
 
   const headers: Record<string, string> = isDev
     ? { 'X-Auth-Token': FOOTBALL_DATA_KEY }
     : {};
 
-  const res = await fetch(url, { headers });
+  const res = await fetch(url, { headers, cache: 'no-store' });
   if (!res.ok) throw new Error(`football-data.org standings: ${res.status}`);
   const data = await res.json();
 

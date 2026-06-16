@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DualClock from './components/DualClock';
 import Standings from './components/Standings';
 import MatchSchedule from './components/MatchSchedule';
@@ -11,12 +11,43 @@ import { useLiveMatches } from './hooks/useLiveMatches';
 
 type Tab = 'inicio' | 'partidos' | 'clasificacion' | 'sedes' | 'estadisticas' | 'buscar';
 
+// Current app version - bump on each deploy to force cache refresh
+const APP_VERSION = '2.1.0';
+
+function useVersionCheck() {
+  const [newVersion, setNewVersion] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Check for new version every 60 seconds
+    const check = async () => {
+      try {
+        const res = await fetch(`/index.html?t=${Date.now()}`, { cache: 'no-store' });
+        const html = await res.text();
+        const match = html.match(/app-version" content="([^"]+)"/);
+        if (match && match[1] !== APP_VERSION) {
+          setNewVersion(match[1]);
+        }
+      } catch {}
+    };
+    check();
+    const interval = setInterval(check, 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const applyUpdate = () => {
+    window.location.reload();
+  };
+
+  return { newVersion, applyUpdate };
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('inicio');
   const [selectedRound, setSelectedRound] = useState('Fase de Grupos');
   const [selectedGroup, setSelectedGroup] = useState('');
 
   const { matches: apiMatches, standings, loading, lastUpdated, refresh, dataSource } = useLiveMatches();
+  const { newVersion, applyUpdate } = useVersionCheck();
 
   // Use API data when available, fall back to static
   const matches = apiMatches.length > 0 ? apiMatches : staticMatches;
@@ -67,7 +98,7 @@ export default function App() {
             </div>
 
             {/* API Status */}
-            <div className="flex items-center justify-center gap-4 text-xs text-white/50">
+            <div className="flex items-center justify-center gap-3 text-xs text-white/50 flex-wrap">
               {loading ? (
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
@@ -75,21 +106,35 @@ export default function App() {
                 </span>
               ) : (
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-                  {dataSource === 'api' ? 'Datos en vivo (API)' : 'Datos locales (estáticos)'}
+                  <span className={`w-2 h-2 rounded-full ${dataSource === 'api' ? 'bg-green-400' : 'bg-yellow-400'}`}></span>
+                  {dataSource === 'api' ? 'En vivo (API)' : '⚠️ Datos locales'}
                 </span>
               )}
               {lastUpdated && (
-                <span>Actualizado: {lastUpdated.toLocaleTimeString('es-ES')}</span>
+                <span>· {lastUpdated.toLocaleTimeString('es-ES')}</span>
               )}
+              <span className="text-white/30">· v{APP_VERSION}</span>
               <button
-                onClick={refresh}
-                className="text-white/40 hover:text-white/70 transition-colors"
-                title="Actualizar datos"
+                onClick={() => refresh()}
+                className="bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded-lg transition-all flex items-center gap-1"
+                title="Forzar actualización"
               >
-                🔄
+                🔄 Actualizar
               </button>
             </div>
+
+            {/* New version banner */}
+            {newVersion && (
+              <div className="mt-3 bg-green-500/20 border border-green-500/40 rounded-lg px-4 py-2 flex items-center justify-center gap-3">
+                <span className="text-green-300 text-sm">✨ Nueva versión disponible</span>
+                <button
+                  onClick={applyUpdate}
+                  className="bg-green-500 text-white px-3 py-1 rounded text-sm font-bold hover:bg-green-400 transition-colors"
+                >
+                  Actualizar ahora
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
