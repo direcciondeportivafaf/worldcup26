@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
+import CountryFlag from './CountryFlag';
 
 interface DualClockProps {
   matchCityTimezone?: string;
   matchCityName?: string;
+  country?: string;
 }
 
-export default function DualClock({ matchCityTimezone, matchCityName }: DualClockProps) {
+export default function DualClock({ matchCityTimezone, matchCityName, country }: DualClockProps) {
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
@@ -60,7 +62,7 @@ export default function DualClock({ matchCityTimezone, matchCityName }: DualCloc
     <div className="flex flex-wrap gap-4 justify-center items-center">
       <div className="bg-gradient-to-br from-yellow-400 to-red-600 rounded-xl px-5 py-3 shadow-lg border-2 border-yellow-300 min-w-[200px] text-center">
         <div className="flex items-center justify-center gap-2 mb-1">
-          <span className="text-lg">🇪🇸</span>
+          <CountryFlag country="Spain" size="md" />
           <span className="text-white font-bold text-sm uppercase tracking-wider">Hora de España</span>
         </div>
         <div className="text-3xl font-mono font-bold text-white drop-shadow">{spainTime}</div>
@@ -69,7 +71,7 @@ export default function DualClock({ matchCityTimezone, matchCityName }: DualCloc
 
       <div className="bg-gradient-to-br from-blue-600 to-indigo-800 rounded-xl px-5 py-3 shadow-lg border-2 border-blue-400 min-w-[200px] text-center">
         <div className="flex items-center justify-center gap-2 mb-1">
-          <span className="text-lg">🌎</span>
+          {country ? <CountryFlag country={country} size="md" /> : <span className="text-lg">🌎</span>}
           <span className="text-white font-bold text-sm uppercase tracking-wider">
             {matchCityName || 'Sede del partido'}
           </span>

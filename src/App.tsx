@@ -7,6 +7,7 @@ import Countdown from './components/Countdown';
 import SearchBar from './components/SearchBar';
 import TopScorers from './components/TopScorers';
 import FlagImg from './components/FlagImg';
+import CountryFlag from './components/CountryFlag';
 import { matches as staticMatches, teams, getTeam, Match } from './data/matches';
 import { useLiveMatches } from './hooks/useLiveMatches';
 
@@ -647,7 +648,7 @@ function HomePage({ matches, standings: apiStandings }: { matches: typeof static
         <h3 className="text-xl font-bold text-white mb-4">🌎 Países anfitriones</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 rounded-2xl p-6 border border-blue-500/20 text-center">
-            <div className="text-5xl mb-3">🇺🇸</div>
+            <div className="mb-3"><CountryFlag country="USA" size="xl" /></div>
             <h4 className="text-white font-bold text-lg">Estados Unidos</h4>
             <p className="text-white/50 text-sm mt-2">11 ciudades sede</p>
             <div className="mt-3 flex flex-wrap gap-1 justify-center">
@@ -657,7 +658,7 @@ function HomePage({ matches, standings: apiStandings }: { matches: typeof static
             </div>
           </div>
           <div className="bg-gradient-to-br from-red-500/10 to-red-600/5 rounded-2xl p-6 border border-red-500/20 text-center">
-            <div className="text-5xl mb-3">🇨🇦</div>
+            <div className="mb-3"><CountryFlag country="Canada" size="xl" /></div>
             <h4 className="text-white font-bold text-lg">Canadá</h4>
             <p className="text-white/50 text-sm mt-2">2 ciudades sede</p>
             <div className="mt-3 flex flex-wrap gap-1 justify-center">
@@ -667,7 +668,7 @@ function HomePage({ matches, standings: apiStandings }: { matches: typeof static
             </div>
           </div>
           <div className="bg-gradient-to-br from-green-500/10 to-green-600/5 rounded-2xl p-6 border border-green-500/20 text-center">
-            <div className="text-5xl mb-3">🇲🇽</div>
+            <div className="mb-3"><CountryFlag country="Mexico" size="xl" /></div>
             <h4 className="text-white font-bold text-lg">México</h4>
             <p className="text-white/50 text-sm mt-2">3 ciudades sede</p>
             <div className="mt-3 flex flex-wrap gap-1 justify-center">
@@ -734,10 +735,10 @@ function HeaderClocks() {
   }, []);
 
   const clocks = [
-    { tz: 'America/New_York', flag: '🇺🇸', label: 'New York', color: 'from-blue-600 to-indigo-800', border: 'border-blue-400' },
-    { tz: 'America/Toronto', flag: '🇨🇦', label: 'Toronto', color: 'from-red-600 to-red-800', border: 'border-red-400' },
-    { tz: 'America/Mexico_City', flag: '🇲🇽', label: 'CDMX', color: 'from-green-600 to-emerald-800', border: 'border-green-400' },
-    { tz: 'Europe/Madrid', flag: '🇪🇸', label: 'España', color: 'from-yellow-500 to-red-600', border: 'border-yellow-300' },
+    { tz: 'America/New_York', country: 'USA', label: 'New York', color: 'from-blue-600 to-indigo-800', border: 'border-blue-400' },
+    { tz: 'America/Toronto', country: 'Canada', label: 'Toronto', color: 'from-red-600 to-red-800', border: 'border-red-400' },
+    { tz: 'America/Mexico_City', country: 'Mexico', label: 'CDMX', color: 'from-green-600 to-emerald-800', border: 'border-green-400' },
+    { tz: 'Europe/Madrid', country: 'Spain', label: 'España', color: 'from-yellow-500 to-red-600', border: 'border-yellow-300' },
   ];
 
   return (
@@ -762,7 +763,7 @@ function HeaderClocks() {
         return (
           <div key={c.tz} className={`bg-gradient-to-br ${c.color} rounded-xl px-4 py-2 shadow-lg border-2 ${c.border} min-w-[130px] text-center`}>
             <div className="flex items-center justify-center gap-1.5 mb-0.5">
-              <span className="text-sm">{c.flag}</span>
+              <CountryFlag country={c.country} size="sm" />
               <span className="text-white font-bold text-xs uppercase tracking-wider">{c.label}</span>
             </div>
             <div className="text-xl font-mono font-bold text-white drop-shadow">{time}</div>

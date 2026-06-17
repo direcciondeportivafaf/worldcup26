@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Match, getTeam, hostCities } from '../data/matches';
 import { fetchMatchDetail, MatchGoal } from '../services/api';
 import FlagImg from './FlagImg';
+import CountryFlag from './CountryFlag';
 
 function GoalIcon({ type }: { type: string }) {
   if (type === 'PENALTY') return <span className="text-yellow-400" title="Penalti">⚽</span>;
@@ -20,7 +21,7 @@ export default function MatchCard({ match, compact = false }: { match: Match; co
 
   const cityInfo = hostCities.find(c => c.name === match.city);
   const localTz = cityInfo?.timezone || 'America/New_York';
-  const localCityName = `${match.city}, ${match.country === 'USA' ? '🇺🇸' : match.country === 'Canada' ? '🇨🇦' : '🇲🇽'}`;
+  const localCityName = `${match.city}, ${match.country}`;
 
   const matchDate = new Date(`${match.date}T${match.time}:00Z`);
 
@@ -111,7 +112,10 @@ export default function MatchCard({ match, compact = false }: { match: Match; co
         </div>
         <div className="text-right min-w-[80px]">
           <div className="text-xs text-white/50">{match.round}</div>
-          <div className="text-xs text-white/40">{localCityName.split(',')[0]}</div>
+          <div className="text-xs text-white/40 flex items-center justify-end gap-1">
+            <CountryFlag country={match.country} size="sm" />
+            {localCityName.split(',')[0]}
+          </div>
         </div>
       </div>
     );

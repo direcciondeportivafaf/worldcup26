@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
+import CountryFlag from './CountryFlag';
 
 interface SimpleClockProps {
   timezone: string;
   label: string;
-  flag: string;
+  country?: string;
+  flag?: string;
 }
 
-export default function SimpleClock({ timezone, label, flag }: SimpleClockProps) {
+export default function SimpleClock({ timezone, label, country, flag }: SimpleClockProps) {
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
@@ -32,7 +34,7 @@ export default function SimpleClock({ timezone, label, flag }: SimpleClockProps)
   return (
     <div className="text-center">
       <div className="flex items-center justify-center gap-2 mb-1">
-        <span className="text-lg">{flag}</span>
+        {country ? <CountryFlag country={country} size="md" /> : <span className="text-lg">{flag}</span>}
         <span className="text-white/60 text-xs uppercase">{label}</span>
       </div>
       <div className="text-2xl font-mono font-bold text-white">{time}</div>
